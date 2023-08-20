@@ -1,0 +1,25 @@
+# Go specific
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+*.prof
+*.trace
+*.test
+*.test.out
+*.test.prof
+*.test.trace
+*.cover
+*.s
+*.swp
+*.bak
+*.tmp
+*.log
+*.vscode
+.idea/
+.vscode/
+*.iml
+vendor/
