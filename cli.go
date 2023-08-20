@@ -17,8 +17,6 @@ import (
 	"gomdb/cli/internal/pkg/models"
 )
 
-const downloadURL = "http://files.tmdb.org/p/exports/"
-
 func main() {
 
 	startAt, _ := strconv.Atoi(os.Args[1:][0])
@@ -35,10 +33,11 @@ func main() {
 	// IMPORTS ALL DAILY ID FILES
 	// importDailyIdFiles()
 
-	//log.Print(http.GetMovieFromAPI(165))
+	today := time.Now().Format("01_02_2006")
+	fileName := fmt.Sprintf("./daily_id_exports/movie_ids_%s.json.gz", today)
 
 	// Open the gzipped file
-	file, err := os.Open("./daily_id_exports/movie_ids_08_18_2023.json.gz")
+	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,6 +68,12 @@ func main() {
 	// var movies []interface{}
 	for scanner.Scan() {
 
+		log.Printf("%v > %v", count, startAt+limit)
+
+		if count >= (startAt + limit) {
+			break
+		}
+
 		wg.Add(1)
 
 		go func(line string) {
@@ -94,27 +99,15 @@ func main() {
 
 				result := database.UpdateMovieDB(&movie)
 
-				f.WriteString(fmt.Sprintf("%v %s %v - %s - Result %v \n", time.Now().Format("2006-01-02 15:04:05"), "INFO", movie.ID, movie.OriginalTitle, result))
-
-				//log.Print(movie.ID, movie.OriginalTitle)
+				f.WriteString(fmt.Sprintf("%v %s %s %v - %s - Result %v \n", time.Now().Format("2006-01-02 15:04:05"), "INFO", "MOVIE", movie.ID, movie.OriginalTitle, result))
 
 				// Release the semaphore
 				<-semaphore
-
-				//log.Printf("%v - %s movie added to slice", movie.ID, movie.OriginalTitle)
-				// if _, err :=  err != nil {
-				// 	log.Print(err)
-				//
-				// }
 			}
-
-			count++
 
 		}(scanner.Text())
 
-		if count > startAt+limit {
-			break
-		}
+		count++
 	}
 
 	wg.Wait()
@@ -132,6 +125,8 @@ func main() {
 // }
 
 func importDailyIdFiles() error {
+
+	downloadURL := "http://files.tmdb.org/p/exports/"
 
 	var err error
 

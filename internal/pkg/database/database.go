@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb+srv://gomdb:8lURb24nnHE8Kht3@gomdb.g9n4cys.mongodb.net/?retryWrites=true&w=majority"
+const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@localhost:27017/?retryWrites=true&w=majority"
 
 func getMovieFromDB(id int) models.Movie {
 
@@ -90,7 +90,7 @@ func Connection() *mongo.Client {
 		log.Fatal(err)
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
 	err = client.Connect(ctx)
