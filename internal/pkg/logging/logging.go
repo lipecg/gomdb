@@ -1,6 +1,7 @@
 package logging
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -17,15 +18,21 @@ func init() {
 }
 
 func Info(message string) {
-	log.Printf("%s %s", "INFO", message)
+	message = fmt.Sprintf("%s %s", "INFO", message)
+	fmt.Printf(message)
+	log.Printf(message)
 }
 
 func Error(message string) {
-	log.Printf("%s %s", "ERROR", message)
+	message = fmt.Sprintf("%s %s", "ERROR", message)
+	fmt.Printf(message)
+	log.Printf(message)
 }
 
 func Panic(message string) {
-	log.Panicf("%s %s", "PANIC", message)
+	message = fmt.Sprintf("%s %s", "PANIC", message)
+	fmt.Printf(message)
+	log.Panicf(message)
 }
 
 func Close() {
