@@ -53,8 +53,13 @@ func main() {
 	startAt := 1
 	limit := -1
 
-	startAt, _ = strconv.Atoi(os.Args[1:][1])
-	limit, _ = strconv.Atoi(os.Args[1:][2])
+	if len(os.Args[1:]) >= 2 {
+		startAt, _ = strconv.Atoi(os.Args[1:][1])
+	}
+
+	if len(os.Args[1:]) >= 3 {
+		limit, _ = strconv.Atoi(os.Args[1:][2])
+	}
 
 	today := time.Now().Format("01_02_2006")
 	fileName := fmt.Sprintf("./daily_id_exports/%s_ids_%s.json.gz", category, today)
