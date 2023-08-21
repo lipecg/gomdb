@@ -30,7 +30,6 @@ func main() {
 	switch category {
 	case "movie", "movies":
 		category = "movie"
-		logging.Panic("Category not supported yet.")
 	case "tvseries", "tv_series":
 		category = "tv_series"
 		logging.Panic("Category not supported yet.")
