@@ -12,7 +12,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@localhost:27017/?retryWrites=true&w=majority"
+const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
 func getMovieFromDB(id int) models.Movie {
 

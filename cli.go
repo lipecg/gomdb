@@ -14,39 +14,63 @@ import (
 	"gomdb/cli/internal/pkg/database"
 	"gomdb/cli/internal/pkg/file"
 	"gomdb/cli/internal/pkg/http"
+	"gomdb/cli/internal/pkg/logging"
 	"gomdb/cli/internal/pkg/models"
 )
 
 func main() {
 
-	startAt, _ := strconv.Atoi(os.Args[1:][0])
-	limit, _ := strconv.Atoi(os.Args[1:][1])
-
-	f, err := os.OpenFile("./import.log",
-		os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		log.Print(err)
+	if os.Args[1:][0] == "import-files" {
+		importDailyIdFiles()
+		return
 	}
 
-	defer f.Close()
+	category := os.Args[1:][0]
 
-	// IMPORTS ALL DAILY ID FILES
-	// importDailyIdFiles()
+	switch category {
+	case "movie", "movies":
+		category = "movie"
+		logging.Panic("Category not supported yet.")
+	case "tvseries", "tv_series":
+		category = "tv_series"
+		logging.Panic("Category not supported yet.")
+	case "person", "people":
+		category = "person"
+		logging.Panic("Category not supported yet.")
+	case "tvnetwork", "tvnetworks", "tv_network", "tv_networks":
+		category = "tv_network"
+		logging.Panic("Category not supported yet.")
+	case "collection", "collections":
+		category = "collection"
+		logging.Panic("Category not supported yet.")
+	case "keyword", "keywords":
+		category = "keyword"
+		logging.Panic("Category not supported yet.")
+	default:
+		log.Print("invalid option")
+		return
+	}
+
+	startAt := 1
+	limit := -1
+
+	startAt, _ = strconv.Atoi(os.Args[1:][1])
+	limit, _ = strconv.Atoi(os.Args[1:][2])
 
 	today := time.Now().Format("01_02_2006")
-	fileName := fmt.Sprintf("./daily_id_exports/movie_ids_%s.json.gz", today)
+	fileName := fmt.Sprintf("./daily_id_exports/%s_ids_%s.json.gz", category, today)
 
 	// Open the gzipped file
 	file, err := os.Open(fileName)
 	if err != nil {
-		log.Fatal(err)
+		logging.Panic(err.Error())
 	}
 	defer file.Close()
 
 	// Create a gzip reader
 	gzReader, err := gzip.NewReader(file)
 	if err != nil {
-		log.Fatal(err)
+		logging.Panic(err.Error())
 	}
 	defer gzReader.Close()
 
@@ -62,15 +86,11 @@ func main() {
 	// Create a rate limiter to respect the rate limit of 10 calls per second
 	rateLimit := time.Tick(time.Second / 10)
 
-	// Iterate through each line and print it
-	//TODO: REMOVE THIS LIMIT
 	count := 1
 	// var movies []interface{}
 	for scanner.Scan() {
 
-		log.Printf("%v > %v", count, startAt+limit)
-
-		if count >= (startAt + limit) {
+		if limit > 0 && count >= (startAt+limit) {
 			break
 		}
 
@@ -91,15 +111,14 @@ func main() {
 				var movie models.Movie
 				err := json.Unmarshal([]byte(line), &movie)
 				if err != nil {
-					log.Fatal(err)
-					f.WriteString(fmt.Sprintf("%v %s %v \n", time.Now().Format("2006-01-02 15:04:05"), "ERROR", err))
+					logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
 				}
 
 				movie = http.GetMovieFromAPI(movie.ID)
 
 				result := database.UpdateMovieDB(&movie)
 
-				f.WriteString(fmt.Sprintf("%v %s %s %v - %s - Result %v \n", time.Now().Format("2006-01-02 15:04:05"), "INFO", "MOVIE", movie.ID, movie.OriginalTitle, result))
+				logging.Info(fmt.Sprintf("%s %v - %s - Result %v \n", "MOVIE", movie.ID, movie.OriginalTitle, result))
 
 				// Release the semaphore
 				<-semaphore
@@ -114,15 +133,12 @@ func main() {
 
 	// Check for any errors during scanning
 	if err := scanner.Err(); err != nil {
-		log.Fatal(err)
-		f.WriteString(fmt.Sprintf("%v %s %v \n", time.Now().Format("2006-01-02 15:04:05"), "ERROR", err))
+		logging.Panic(err.Error())
 	}
 
-}
+	logging.Close()
 
-// func logError(err error) {
-// 	f.WriteString(fmt.Sprintf("%v %s %v \n", time.Now().Format("2006-01-02 15:04:05"), "ERROR", err))
-// }
+}
 
 func importDailyIdFiles() error {
 
@@ -131,7 +147,7 @@ func importDailyIdFiles() error {
 	var err error
 
 	for _, cat := range models.CategoryList {
-		log.Printf("%s - %s - %s", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName))
+		logging.Info(fmt.Sprintf("%s - %s - %s", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
 
 		fileName := file.GetFileName(cat.FileName)
 		fileURL := downloadURL + fileName
@@ -141,7 +157,6 @@ func importDailyIdFiles() error {
 		if err != nil {
 			return err
 		}
-		// log.Printf("%s downloaded to %s", fileURL, filePath)
 	}
 
 	return err
