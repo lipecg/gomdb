@@ -24,3 +24,4 @@
 *.iml
 vendor/
 daily_id_exports/
+*.DS_Store
