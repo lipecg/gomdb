@@ -2,6 +2,7 @@ package database
 
 import (
 	"context"
+	"errors"
 	"gomdb/internal/pkg/domain"
 	"reflect"
 
@@ -12,9 +13,15 @@ import (
 
 const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
-func getMongoCollection(ms mongoStore) *mongo.Collection {
-	//TODO: Need to get proper collecton based on entity type
-	return ms.Client.Database("gomdb").Collection("movies")
+func getMongoCollection(ms mongoStore, collection ...string) (*mongo.Collection, error) {
+	if collection != nil {
+		if collection[0] == "*domain.Movie" {
+			return ms.Client.Database("gomdb").Collection("movies"), nil
+		} else if collection[0] == "*domain.TVSeries" {
+			return ms.Client.Database("gomdb").Collection("tvseries"), nil
+		}
+	}
+	return nil, errors.New("Cannot get collection")
 }
 
 type mongoStore struct {
@@ -30,7 +37,9 @@ func NewMongoStore() (domain.EntityDB, error) {
 }
 
 func (ms mongoStore) Get(id int) (*interface{}, error) {
-	col := getMongoCollection(ms)
+	//TODO: handle error properly
+	//TODO: get proper type
+	col, _ := getMongoCollection(ms, "*domain.Movie")
 	filter := bson.M{"id": id}
 	var entity interface{}
 	err := col.FindOne(context.TODO(), filter).Decode(&entity)
@@ -41,8 +50,10 @@ func (ms mongoStore) Get(id int) (*interface{}, error) {
 }
 
 // TODO: This won't work because of the query
+// TODO: Need to get collection name from .... Query?
 func (ms mongoStore) List(query string) ([]*interface{}, error) {
-	col := getMongoCollection(ms)
+	//TODO: handle error properly
+	col, _ := getMongoCollection(ms, "*domain.Movie")
 	filter := bson.M{"query": query}
 	var entities []*interface{}
 	cursor, err := col.Find(context.TODO(), filter)
@@ -56,12 +67,16 @@ func (ms mongoStore) List(query string) ([]*interface{}, error) {
 }
 
 func (ms mongoStore) Upsert(entity *interface{}) error {
-	col := getMongoCollection(ms)
+	entityType := reflect.TypeOf(*entity).String()
+	col, err := getMongoCollection(ms, entityType)
+	if err != nil {
+		return err
+	}
 
 	filter := bson.M{"id": (reflect.ValueOf(entity).Elem())}
 	options := options.Replace().SetUpsert(true)
 
-	_, err := col.ReplaceOne(context.TODO(), filter, entity, options)
+	_, err = col.ReplaceOne(context.TODO(), filter, entity, options)
 
 	return err
 }
