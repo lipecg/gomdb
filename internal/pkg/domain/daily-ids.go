@@ -1,4 +1,4 @@
-package models
+package domain
 
 type MovieTvIndex struct {
 	ID            int    `json:"id,omitempty" bson:"id,omitempty"`

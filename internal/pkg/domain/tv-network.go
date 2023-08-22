@@ -1,4 +1,4 @@
-package models
+package domain
 
 type TvNetwork struct {
 	Headquarters  string `json:"headquarters"`

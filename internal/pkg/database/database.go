@@ -1,8 +1,8 @@
-package mongo
+package database
 
 import (
 	"context"
-	"gomdb/cli/internal/pkg/models"
+	"gomdb/internal/pkg/domain"
 	"log"
 	"time"
 
@@ -14,11 +14,11 @@ import (
 
 const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
-func getMovieFromDB(id int) models.Movie {
+func getMovieFromDB(id int) domain.Movie {
 
 	moviesCollection := CNX.Database("gomdb").Collection("movies")
 
-	movie := models.Movie{}
+	movie := domain.Movie{}
 
 	filter := bson.D{primitive.E{Key: "id", Value: id}}
 
@@ -33,7 +33,7 @@ func getMovieFromDB(id int) models.Movie {
 	return movie
 }
 
-func UpdateMovieDB(movie *models.Movie) *mongo.UpdateResult {
+func UpdateMovieDB(movie *domain.Movie) *mongo.UpdateResult {
 	moviesCollection := CNX.Database("gomdb").Collection("movies")
 
 	movie.Updated = time.Now()

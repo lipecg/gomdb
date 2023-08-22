@@ -3,8 +3,8 @@ package http
 import (
 	"encoding/json"
 	"fmt"
-	"gomdb/cli/internal/pkg/file"
-	"gomdb/cli/internal/pkg/models"
+	"gomdb/internal/pkg/domain"
+	"gomdb/internal/pkg/file"
 	"io"
 	"log"
 	"net/http"
@@ -41,8 +41,8 @@ func httpGet(query string) []byte {
 
 }
 
-func extractJson(body []byte) models.Movie {
-	var movie models.Movie
+func extractJson(body []byte) domain.Movie {
+	var movie domain.Movie
 	if err := json.Unmarshal(body, &movie); err != nil { // Parse []byte to the go struct pointer
 		fmt.Println("Can not unmarshal JSON")
 	}
@@ -50,7 +50,7 @@ func extractJson(body []byte) models.Movie {
 	return movie
 }
 
-func GetMovieFromAPI(id int) models.Movie {
+func GetMovieFromAPI(id int) domain.Movie {
 	obj := httpGet(fmt.Sprintf("movie/%v", id))
 	movie := extractJson(obj)
 	return movie

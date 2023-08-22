@@ -1,4 +1,4 @@
-package models
+package domain
 
 type ProductionCompany struct {
 	Description   string      `json:"description,omitempty" bson:"description,omitempty"`

@@ -1,4 +1,4 @@
-module gomdb/cli
+module gomdb
 
 go 1.21.0
 

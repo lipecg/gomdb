@@ -1,4 +1,4 @@
-package models
+package domain
 
 type Person struct {
 	Adult              bool     `json:"adult,omitempty" bson:"adult,omitempty"`

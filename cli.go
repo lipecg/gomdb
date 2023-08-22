@@ -11,11 +11,11 @@ import (
 	"sync"
 	"time"
 
-	mongo "gomdb/cli/internal/pkg/database"
-	"gomdb/cli/internal/pkg/file"
-	"gomdb/cli/internal/pkg/http"
-	"gomdb/cli/internal/pkg/logging"
-	"gomdb/cli/internal/pkg/models"
+	"gomdb/internal/pkg/database"
+	"gomdb/internal/pkg/domain"
+	"gomdb/internal/pkg/file"
+	"gomdb/internal/pkg/http"
+	"gomdb/internal/pkg/logging"
 )
 
 func main() {
@@ -112,7 +112,7 @@ func main() {
 				// Wait for the rate limiter to allow the API call
 				<-rateLimit
 
-				var movie models.Movie
+				var movie domain.Movie
 				err := json.Unmarshal([]byte(line), &movie)
 				if err != nil {
 					logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
@@ -120,7 +120,7 @@ func main() {
 
 				movie = http.GetMovieFromAPI(movie.ID)
 
-				result := mongo.UpdateMovieDB(&movie)
+				result := database.UpdateMovieDB(&movie)
 
 				logging.Info(fmt.Sprintf("%s %v - %s - Result %v \n", "MOVIE", movie.ID, movie.OriginalTitle, result))
 
@@ -150,7 +150,7 @@ func importDailyIdFiles() error {
 
 	var err error
 
-	for _, cat := range models.CategoryList {
+	for _, cat := range domain.CategoryList {
 		logging.Info(fmt.Sprintf("%s - %s - %s", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
 
 		fileName := file.GetFileName(cat.FileName)
