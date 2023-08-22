@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"gomdb/cli/internal/pkg/database"
+	mongo "gomdb/cli/internal/pkg/database"
 	"gomdb/cli/internal/pkg/file"
 	"gomdb/cli/internal/pkg/http"
 	"gomdb/cli/internal/pkg/logging"
@@ -120,7 +120,7 @@ func main() {
 
 				movie = http.GetMovieFromAPI(movie.ID)
 
-				result := database.UpdateMovieDB(&movie)
+				result := mongo.UpdateMovieDB(&movie)
 
 				logging.Info(fmt.Sprintf("%s %v - %s - Result %v \n", "MOVIE", movie.ID, movie.OriginalTitle, result))
 
