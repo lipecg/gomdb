@@ -161,7 +161,7 @@ func importDailyIdFiles() error {
 	var err error
 
 	for _, cat := range domain.CategoryList {
-		logging.Info(fmt.Sprintf("%s - %s - %s", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
+		logging.Info(fmt.Sprintf("%s - %s - %s \n", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
 
 		fileName := file.GetFileName(cat.FileName)
 		fileURL := downloadURL + fileName

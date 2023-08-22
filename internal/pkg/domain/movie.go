@@ -3,15 +3,13 @@ package domain
 import "time"
 
 type Movie struct {
-	ObjectId            interface{}         `json:"_id,omitempty" bson:"_id,omitempty"`
+	Entity
 	Adult               bool                `json:"adult,omitempty" bson:"adult,omitempty"`
 	BackdropPath        string              `json:"backdrop_path,omitempty" bson:"backdrop_path,omitempty"`
 	BelongsToCollection interface{}         `json:"belongs_to_collection,omitempty" bson:"belongs_to_collection,omitempty"`
 	Budget              int                 `json:"budget,omitempty" bson:"budget,omitempty"`
 	Genres              []Genre             `json:"genres,omitempty" bson:"genres,omitempty"`
 	Homepage            string              `json:"homepage,omitempty" bson:"homepage,omitempty"`
-	ID                  int                 `json:"id,omitempty" bson:"id,omitempty"`
-	ImdbID              string              `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
 	OriginalLanguage    string              `json:"original_language,omitempty" bson:"original_language,omitempty"`
 	OriginalTitle       string              `json:"original_title,omitempty" bson:"original_title,omitempty"`
 	Overview            string              `json:"overview,omitempty" bson:"overview,omitempty"`
@@ -39,7 +37,5 @@ type MovieSvc interface {
 }
 
 type MovieDB interface {
-	Get(id int) (*Movie, error)
-	List(search string) ([]*Movie, error)
-	Upsert(m *Movie) error
+	EntityDB
 }

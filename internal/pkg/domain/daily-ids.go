@@ -1,5 +1,17 @@
 package domain
 
+type Entity struct {
+	ID       int         `json:"id,omitempty" bson:"id,omitempty"`
+	ObjectId interface{} `json:"_id,omitempty" bson:"_id,omitempty"`
+	ImdbID   string      `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
+}
+
+type EntityDB interface {
+	Get(id int) (*interface{}, error)
+	List(search string) ([]*interface{}, error)
+	Upsert(m *interface{}) error
+}
+
 type MovieTvIndex struct {
 	ID            int    `json:"id,omitempty" bson:"id,omitempty"`
 	OriginalTitle string `json:"original_title,omitempty" bson:"original_title,omitempty"`
