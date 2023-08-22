@@ -13,6 +13,7 @@ import (
 const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
 func getMongoCollection(ms mongoStore) *mongo.Collection {
+	//TODO: Need to get proper collecton based on entity type
 	return ms.Client.Database("gomdb").Collection("movies")
 }
 
