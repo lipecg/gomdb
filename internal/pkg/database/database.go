@@ -3,103 +3,66 @@ package database
 import (
 	"context"
 	"gomdb/internal/pkg/domain"
-	"log"
-	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
-func getMovieFromDB(id int) domain.Movie {
-
-	moviesCollection := CNX.Database("gomdb").Collection("movies")
-
-	movie := domain.Movie{}
-
-	filter := bson.D{primitive.E{Key: "id", Value: id}}
-
-	err := moviesCollection.FindOne(context.TODO(), filter).Decode(&movie)
-
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Panic(err)
-		}
-	}
-
-	return movie
+func getMongoCollection(ms mongoStore) *mongo.Collection {
+	return ms.Client.Database("gomdb").Collection("movies")
 }
 
-func UpdateMovieDB(movie *domain.Movie) *mongo.UpdateResult {
-	moviesCollection := CNX.Database("gomdb").Collection("movies")
+type mongoStore struct {
+	Client *mongo.Client
+}
 
-	movie.Updated = time.Now()
+func NewMongoStore() (domain.MovieDB, error) {
+	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbConnString))
+	if err != nil {
+		return nil, err
+	}
+	return mongoStore{Client: client}, nil
+}
 
-	filter := bson.D{bson.E{Key: "id", Value: movie.ID}}
-	doc, err := toDoc(movie)
+func (ms mongoStore) Get(id int) (*domain.Movie, error) {
+	col := getMongoCollection(ms)
+	filter := bson.M{"id": id}
+	movie := domain.Movie{}
+	err := col.FindOne(context.TODO(), filter).Decode(&movie)
+	if err != nil {
+		return nil, err
+	}
+	return &movie, nil
+}
+
+// TODO: This won't work because of the query
+func (ms mongoStore) List(query string) ([]*domain.Movie, error) {
+	col := getMongoCollection(ms)
+	filter := bson.M{"query": query}
+	pets := []*domain.Movie{}
+	cursor, err := col.Find(context.TODO(), filter)
+	if err != nil {
+		return nil, err
+	}
+	if err := cursor.All(context.TODO(), &pets); err != nil {
+		return nil, err
+	}
+	return pets, nil
+}
+
+func (ms mongoStore) Upsert(movie *domain.Movie) error {
+	col := getMongoCollection(ms)
+
+	filter := bson.M{"id": movie.ID}
 	options := options.Replace().SetUpsert(true)
 
-	if err != nil {
-		log.Panic(err)
+	result, err := col.ReplaceOne(context.TODO(), filter, movie, options)
+	if result.UpsertedCount > 0 && result.UpsertedID != nil {
+		movie.ObjectId = result.UpsertedID
 	}
 
-	result, err := moviesCollection.ReplaceOne(context.TODO(), filter, doc, options)
-
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Panic(err)
-		}
-	}
-
-	return result
+	return err
 }
-
-func InsertManyMovies(movies []interface{}) *mongo.InsertManyResult {
-
-	moviesCollection := CNX.Database("gomdb").Collection("movies")
-
-	result, err := moviesCollection.InsertMany(context.TODO(), movies)
-
-	if err != nil {
-		if err != mongo.ErrNoDocuments {
-			log.Panic(err)
-		}
-	}
-
-	return result
-}
-
-func toDoc(v interface{}) (doc *bson.D, err error) {
-	data, err := bson.Marshal(v)
-	if err != nil {
-		return
-	}
-
-	err = bson.Unmarshal(data, &doc)
-	return
-}
-
-func Connection() *mongo.Client {
-
-	client, err := mongo.NewClient(options.Client().ApplyURI(dbConnString))
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	err = client.Connect(ctx)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	return client
-}
-
-var CNX = Connection()

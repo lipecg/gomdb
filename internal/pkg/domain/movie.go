@@ -32,37 +32,14 @@ type Movie struct {
 	Updated             time.Time           `json:"updated,omitempty" bson:"updated,omitempty"`
 }
 
-// type Movie struct {
-// 	ObjectId interface{} `bson:"_id,omitempty"`
-// 	TmdbId   int         `json:"id,omitempty"`
-// 	ImdbID   string      `json:"imdbID,omitempty" bson:"imdbID"`
-// 	Title    string      `json:"Title,omitempty" bson:"title"`
-// 	Year     string      `json:"Year,omitempty" bson:"year"`
-// 	Rate     string      `json:"Rated,omitempty" bson:"rated"`
-// 	Released string      `json:"Released,omitempty" bson:"released"`
-// 	Runtime  string      `json:"Runtime,omitempty" bson:"runtime"`
-// 	Genre    string      `json:"Genre,omitempty" bson:"genre"`
-// 	Director string      `json:"Director,omitempty" bson:"director"`
-// 	Writer   string      `json:"Writer,omitempty" bson:"writer"`
-// 	Actors   string      `json:"Actors,omitempty" bson:"actors"`
-// 	Plot     string      `json:"Plot,omitempty" bson:"plot"`
-// 	Language string      `json:"Language,omitempty" bson:"language"`
-// 	Country  string      `json:"Country,omitempty" bson:"country"`
-// 	Awards   string      `json:"Awards,omitempty" bson:"awards"`
-// 	Poster   string      `json:"Poster,omitempty" bson:"poster"`
-// 	Ratings  []struct {
-// 		Source string `json:"Source,omitempty" bson:"source"`
-// 		Value  string `json:"Value,omitempty" bson:"value"`
-// 	} `json:"Ratings,omitempty" bson:"ratings"`
-// 	Metascore  string    `json:"Metascore,omitempty" bson:"metascore"`
-// 	ImdbRating string    `json:"imdbRating,omitempty" bson:"imdbRating"`
-// 	ImdbVotes  string    `json:"imdbVotes,omitempty" bson:"imdbVotes"`
-// 	Type       string    `json:"Type,omitempty" bson:"type"`
-// 	DVD        string    `json:"DVD,omitempty" bson:"dvd"`
-// 	BoxOffice  string    `json:"BoxOffice,omitempty" bson:"boxOffice"`
-// 	Production string    `json:"Production,omitempty" bson:"production"`
-// 	Website    string    `json:"Website,omitempty" bson:"website"`
-// 	Response   string    `json:"Response,omitempty" bson:"response"`
-// 	Created    time.Time `json:"Created,omitempty" bson:"created"`
-// 	Updated    time.Time `json:"Updated,omitempty" bson:"updated"`
-// }
+type MovieSvc interface {
+	Get(id int) (*Movie, error)
+	List(query string) ([]*Movie, error)
+	Upsert(m *Movie) error
+}
+
+type MovieDB interface {
+	Get(id int) (*Movie, error)
+	List(search string) ([]*Movie, error)
+	Upsert(m *Movie) error
+}

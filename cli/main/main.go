@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"gomdb/app"
 	"gomdb/internal/pkg/database"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/file"
@@ -81,6 +82,12 @@ func main() {
 	// Create a scanner to read the decompressed data line by line
 	scanner := bufio.NewScanner(gzReader)
 
+	db, err := database.NewMongoStore()
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+	svc := app.NewMovieSvc(db)
+
 	var wg sync.WaitGroup
 
 	// Create a channel to limit the number of concurrent API calls
@@ -120,9 +127,12 @@ func main() {
 
 				movie = http.GetMovieFromAPI(movie.ID)
 
-				result := database.UpdateMovieDB(&movie)
+				err = svc.Upsert(&movie)
+				if err != nil {
+					logging.Panic(err.Error())
+				}
 
-				logging.Info(fmt.Sprintf("%s %v - %s - Result %v \n", "MOVIE", movie.ID, movie.OriginalTitle, result))
+				logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "MOVIE", movie.ID, movie.OriginalTitle, movie.ObjectId))
 
 				// Release the semaphore
 				<-semaphore
