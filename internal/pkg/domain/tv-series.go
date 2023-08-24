@@ -44,3 +44,30 @@ type TVSeriesSvc interface {
 type TVSeriesDB interface {
 	EntityDB
 }
+
+type Season struct {
+	AirDate      string  `json:"air_date,omitempty" bson:"air_date,omitempty"`
+	EpisodeCount int     `json:"episode_count,omitempty" bson:"episode_count,omitempty"`
+	ID           int     `json:"id,omitempty" bson:"id,omitempty"`
+	Name         string  `json:"name,omitempty" bson:"name,omitempty"`
+	Overview     string  `json:"overview,omitempty" bson:"overview,omitempty"`
+	PosterPath   string  `json:"poster_path,omitempty" bson:"poster_path,omitempty"`
+	SeasonNumber int     `json:"season_number,omitempty" bson:"season_number,omitempty"`
+	VoteAverage  float64 `json:"vote_average,omitempty" bson:"vote_average,omitempty"`
+}
+
+type LastEpisodeToAir struct {
+	ID             int     `json:"id,omitempty" bson:"id,omitempty"`
+	Name           string  `json:"name,omitempty" bson:"name,omitempty"`
+	Overview       string  `json:"overview,omitempty" bson:"overview,omitempty"`
+	VoteAverage    float64 `json:"vote_average,omitempty" bson:"vote_average,omitempty"`
+	VoteCount      int     `json:"vote_count,omitempty" bson:"vote_count,omitempty"`
+	AirDate        string  `json:"air_date,omitempty" bson:"air_date,omitempty"`
+	EpisodeNumber  int     `json:"episode_number,omitempty" bson:"episode_number,omitempty"`
+	EpisodeType    string  `json:"episode_type,omitempty" bson:"episode_type,omitempty"`
+	ProductionCode string  `json:"production_code,omitempty" bson:"production_code,omitempty"`
+	Runtime        int     `json:"runtime,omitempty" bson:"runtime,omitempty"`
+	SeasonNumber   int     `json:"season_number,omitempty" bson:"season_number,omitempty"`
+	ShowID         int     `json:"show_id,omitempty" bson:"show_id,omitempty"`
+	StillPath      string  `json:"still_path,omitempty" bson:"still_path,omitempty"`
+}

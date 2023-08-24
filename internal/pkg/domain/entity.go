@@ -17,3 +17,13 @@ type EntityAPI interface {
 	// ListFromAPI(search string) ([]*interface{}, error)
 	// ListChangedFromAPI(search string) ([]*interface{}, error)
 }
+
+type MovieTvIndex struct {
+	ID            int    `json:"id,omitempty" bson:"id,omitempty"`
+	OriginalTitle string `json:"original_title,omitempty" bson:"original_title,omitempty"`
+}
+
+type Genre struct {
+	ID   int    `json:"id,omitempty" bson:"id,omitempty"`
+	Name string `json:"name,omitempty" bson:"name,omitempty"`
+}

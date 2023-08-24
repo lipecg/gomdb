@@ -16,3 +16,11 @@ type Person struct {
 	Popularity         float64  `json:"popularity,omitempty" bson:"popularity,omitempty"`
 	ProfilePath        string   `json:"profile_path,omitempty" bson:"profile_path,omitempty"`
 }
+
+type CreatedBy struct {
+	ID          int    `json:"id,omitempty" bson:"id,omitempty"`
+	CreditID    string `json:"credit_id,omitempty" bson:"credit_id,omitempty"`
+	Name        string `json:"name,omitempty" bson:"name,omitempty"`
+	Gender      int    `json:"gender,omitempty" bson:"gender,omitempty"`
+	ProfilePath string `json:"profile_path,omitempty" bson:"profile_path,omitempty"`
+}
