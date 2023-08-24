@@ -12,8 +12,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
-
 func getMongoCollection(ms mongoStore, collection ...string) (*mongo.Collection, error) {
 	if collection != nil {
 		if collection[0] == "*domain.Movie" {
@@ -29,7 +27,7 @@ type mongoStore struct {
 	Client *mongo.Client
 }
 
-func NewMongoStore() (domain.EntityDB, error) {
+func NewMongoStore(dbConnString string) (domain.EntityDB, error) {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbConnString))
 	if err != nil {
 		logging.Panic(err.Error())

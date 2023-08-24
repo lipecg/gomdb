@@ -23,6 +23,7 @@ const tmdbURL = "https://api.themoviedb.org/3/"
 const tmdbApiKey = "?api_key=bdd0d7bc1bd4ee8f7c6b5fa9dc5611c1"
 const fileDownloadURL = "http://files.tmdb.org/p/exports/"
 const fileDownloadDir = "./daily_id_exports/"
+const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
 func main() {
 
@@ -33,7 +34,7 @@ func main() {
 
 	category := os.Args[1:][0]
 
-	db, err := database.NewMongoStore()
+	db, err := database.NewMongoStore(dbConnString)
 
 	api, err := tmdb.NewTmdbClient(tmdbURL, tmdbApiKey)
 
