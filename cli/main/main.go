@@ -21,10 +21,12 @@ import (
 
 const tmdbURL = "https://api.themoviedb.org/3/"
 const tmdbApiKey = "?api_key=bdd0d7bc1bd4ee8f7c6b5fa9dc5611c1"
+const fileDownloadURL = "http://files.tmdb.org/p/exports/"
+const fileDownloadDir = "./daily_id_exports/"
 
 func main() {
 
-	if os.Args[1:][0] == "import-files" {
+	if os.Args[1:][0] == "-if" || os.Args[1:][0] == "import-files" {
 		importDailyIdFiles()
 		return
 	}
@@ -171,16 +173,14 @@ func main() {
 
 func importDailyIdFiles() error {
 
-	downloadURL := "http://files.tmdb.org/p/exports/"
-
 	var err error
 
 	for _, cat := range domain.CategoryList {
 		logging.Info(fmt.Sprintf("%s - %s - %s \n", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
 
 		fileName := file.GetFileName(cat.FileName)
-		fileURL := downloadURL + fileName
-		filePath := "./daily_id_exports/" + fileName
+		fileURL := fileDownloadURL + fileName
+		filePath := fileDownloadDir + fileName
 		err := tmdb.FetchFileFromURL(fileURL, filePath)
 
 		if err != nil {
