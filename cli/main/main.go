@@ -15,9 +15,12 @@ import (
 	"gomdb/internal/pkg/database"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/file"
-	"gomdb/internal/pkg/http"
 	"gomdb/internal/pkg/logging"
+	"gomdb/internal/pkg/tmdb"
 )
+
+const tmdbURL = "https://api.themoviedb.org/3/"
+const tmdbApiKey = "?api_key=bdd0d7bc1bd4ee8f7c6b5fa9dc5611c1"
 
 func main() {
 
@@ -83,10 +86,18 @@ func main() {
 	scanner := bufio.NewScanner(gzReader)
 
 	db, err := database.NewMongoStore()
+
 	if err != nil {
 		logging.Panic(err.Error())
 	}
-	svc := app.NewMovieSvc(db)
+
+	api, err := tmdb.NewTmdbClient(tmdbURL, tmdbApiKey)
+
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+
+	svc := app.NewMovieSvc(db, api)
 
 	var wg sync.WaitGroup
 
@@ -120,12 +131,16 @@ func main() {
 				<-rateLimit
 
 				var movie domain.Movie
+
 				err := json.Unmarshal([]byte(line), &movie)
 				if err != nil {
 					logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
 				}
 
-				movie = http.GetMovieFromAPI(movie.ID)
+				err = svc.GetFromAPI(&movie)
+				if err != nil {
+					logging.Panic(err.Error())
+				}
 
 				err = svc.Upsert(&movie)
 				if err != nil {
@@ -166,7 +181,7 @@ func importDailyIdFiles() error {
 		fileName := file.GetFileName(cat.FileName)
 		fileURL := downloadURL + fileName
 		filePath := "./daily_id_exports/" + fileName
-		err := http.FetchFileFromURL(fileURL, filePath)
+		err := tmdb.FetchFileFromURL(fileURL, filePath)
 
 		if err != nil {
 			return err

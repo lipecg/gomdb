@@ -9,7 +9,13 @@ type Entity struct {
 type EntityDB interface {
 	Get(id int) (*interface{}, error)
 	List(search string) ([]*interface{}, error)
-	Upsert(m *interface{}) error
+	Upsert(e *interface{}) error
+}
+
+type EntityAPI interface {
+	GetFromAPI(e *interface{}) error
+	// ListFromAPI(search string) ([]*interface{}, error)
+	// ListChangedFromAPI(search string) ([]*interface{}, error)
 }
 
 type MovieTvIndex struct {

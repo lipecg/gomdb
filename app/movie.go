@@ -7,12 +7,14 @@ import (
 )
 
 type movieSvc struct {
-	DB domain.MovieDB
+	DB  domain.MovieDB
+	API domain.MovieAPI
 }
 
-func NewMovieSvc(db domain.MovieDB) domain.MovieSvc {
+func NewMovieSvc(db domain.MovieDB, api domain.MovieAPI) domain.MovieSvc {
 	return movieSvc{
-		DB: db,
+		DB:  db,
+		API: api,
 	}
 }
 
@@ -38,4 +40,9 @@ func (ms movieSvc) List(query string) ([]*domain.Movie, error) {
 func (ms movieSvc) Upsert(movie *domain.Movie) error {
 	var movieDB interface{} = movie
 	return ms.DB.Upsert(&movieDB)
+}
+
+func (ms movieSvc) GetFromAPI(movie *domain.Movie) error {
+	var movieAPI interface{} = movie
+	return ms.API.GetFromAPI(&movieAPI)
 }

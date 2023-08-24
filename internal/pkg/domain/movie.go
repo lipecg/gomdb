@@ -31,11 +31,21 @@ type Movie struct {
 }
 
 type MovieSvc interface {
+	// DB
 	Get(id int) (*Movie, error)
 	List(query string) ([]*Movie, error)
 	Upsert(m *Movie) error
+
+	// API
+	GetFromAPI(movie *Movie) error
+	// ListFromAPI(query string) ([]*Movie, error)
+	// ListChangedFromAPI(query string) ([]*Movie, error)
 }
 
 type MovieDB interface {
 	EntityDB
+}
+
+type MovieAPI interface {
+	EntityAPI
 }
