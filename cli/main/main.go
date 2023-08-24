@@ -33,12 +33,19 @@ func main() {
 
 	category := os.Args[1:][0]
 
+	db, err := database.NewMongoStore()
+
+	api, err := tmdb.NewTmdbClient(tmdbURL, tmdbApiKey)
+
+	var svc interface{}
+
 	switch category {
 	case "movie", "movies":
 		category = "movie"
-	case "tvseries", "tv_series":
+		svc = app.NewMovieSvc(db, api)
+	case "tvseries", "tv_series", "tv":
 		category = "tv_series"
-		logging.Panic("Category not supported yet.")
+		svc = app.NewTVSeriesSvc(db, api)
 	case "person", "people":
 		category = "person"
 		logging.Panic("Category not supported yet.")
@@ -55,6 +62,8 @@ func main() {
 		log.Print("invalid option")
 		return
 	}
+
+	fmt.Println(svc)
 
 	startAt := 1
 	limit := -1
@@ -87,19 +96,8 @@ func main() {
 	// Create a scanner to read the decompressed data line by line
 	scanner := bufio.NewScanner(gzReader)
 
-	db, err := database.NewMongoStore()
-
-	if err != nil {
-		logging.Panic(err.Error())
-	}
-
-	api, err := tmdb.NewTmdbClient(tmdbURL, tmdbApiKey)
-
-	if err != nil {
-		logging.Panic(err.Error())
-	}
-
-	svc := app.NewMovieSvc(db, api)
+	movieSvc := app.NewMovieSvc(db, api)
+	//tvSvc := app.NewTVSeriesSvc(db, api)
 
 	var wg sync.WaitGroup
 
@@ -139,12 +137,12 @@ func main() {
 					logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
 				}
 
-				err = svc.GetFromAPI(&movie)
+				err = movieSvc.GetFromAPI(&movie)
 				if err != nil {
 					logging.Panic(err.Error())
 				}
 
-				err = svc.Upsert(&movie)
+				err = movieSvc.Upsert(&movie)
 				if err != nil {
 					logging.Panic(err.Error())
 				}

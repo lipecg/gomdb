@@ -2,6 +2,7 @@ package tmdb
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/file"
@@ -26,6 +27,10 @@ func NewTmdbClient(apiUrl, apiKey string) (domain.EntityAPI, error) {
 
 	err := client.PingAPI()
 
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+
 	return client, err
 }
 
@@ -35,13 +40,14 @@ func (tc *tmdbClient) PingAPI() error {
 	if err != nil {
 		return err
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		logging.Error(fmt.Sprintf("API ping failed: %s", resp.Status))
+		err = errors.New(fmt.Sprintf("API ping failed: %s", resp.Status))
 	}
 
-	return nil
+	return err
 }
 
 func (tc tmdbClient) GetFromAPI(entity *interface{}) error {

@@ -7,18 +7,20 @@ import (
 )
 
 type tvSeriesSvc struct {
-	DB domain.TVSeriesDB
+	DB  domain.TVSeriesDB
+	API domain.EntityAPI
 }
 
-func NewTVSeriesSvc(db domain.TVSeriesDB) domain.TVSeriesSvc {
+func NewTVSeriesSvc(db domain.TVSeriesDB, api domain.TVSeriesAPI) domain.TVSeriesSvc {
 	return tvSeriesSvc{
-		DB: db,
+		DB:  db,
+		API: api,
 	}
 }
 
 func (ms tvSeriesSvc) Get(id int) (*domain.TVSeries, error) {
-	movie, err := ms.DB.Get(id)
-	return (*movie).(*domain.TVSeries), err
+	tvSeries, err := ms.DB.Get(id)
+	return (*tvSeries).(*domain.TVSeries), err
 }
 
 func (ms tvSeriesSvc) List(query string) ([]*domain.TVSeries, error) {
@@ -38,4 +40,9 @@ func (ms tvSeriesSvc) List(query string) ([]*domain.TVSeries, error) {
 func (ms tvSeriesSvc) Upsert(tvSeries *domain.TVSeries) error {
 	var tvSeriesDB interface{} = tvSeries
 	return ms.DB.Upsert(&tvSeriesDB)
+}
+
+func (ms tvSeriesSvc) GetFromAPI(tvSeries *domain.TVSeries) error {
+	var tvSeriesAPI interface{} = tvSeries
+	return ms.API.GetFromAPI(&tvSeriesAPI)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"gomdb/internal/pkg/domain"
+	"gomdb/internal/pkg/logging"
 	"reflect"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -31,7 +32,7 @@ type mongoStore struct {
 func NewMongoStore() (domain.EntityDB, error) {
 	client, err := mongo.Connect(context.TODO(), options.Client().ApplyURI(dbConnString))
 	if err != nil {
-		return nil, err
+		logging.Panic(err.Error())
 	}
 	return mongoStore{Client: client}, nil
 }

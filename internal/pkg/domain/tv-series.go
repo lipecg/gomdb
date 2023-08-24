@@ -36,13 +36,23 @@ type TVSeries struct {
 }
 
 type TVSeriesSvc interface {
+	// DB
 	Get(id int) (*TVSeries, error)
 	List(query string) ([]*TVSeries, error)
 	Upsert(m *TVSeries) error
+
+	// API
+	GetFromAPI(tvSeries *TVSeries) error
+	// ListFromAPI(query string) ([]*TVSeries, error)
+	// ListChangedFromAPI(query string) ([]*TVSeries, error)
 }
 
 type TVSeriesDB interface {
 	EntityDB
+}
+
+type TVSeriesAPI interface {
+	EntityAPI
 }
 
 type Season struct {
