@@ -98,7 +98,7 @@ func main() {
 	scanner := bufio.NewScanner(gzReader)
 
 	movieSvc := app.NewMovieSvc(db, api)
-	//tvSvc := app.NewTVSeriesSvc(db, api)
+	tvSvc := app.NewTVSeriesSvc(db, api)
 
 	var wg sync.WaitGroup
 
@@ -131,24 +131,49 @@ func main() {
 				// Wait for the rate limiter to allow the API call
 				<-rateLimit
 
-				var movie domain.Movie
+				if category == "movie" {
 
-				err := json.Unmarshal([]byte(line), &movie)
-				if err != nil {
-					logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
+					var movie domain.Movie
+
+					err := json.Unmarshal([]byte(line), &movie)
+					if err != nil {
+						logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
+					}
+
+					err = movieSvc.GetFromAPI(&movie)
+					if err != nil {
+						logging.Error(err.Error())
+					}
+
+					err = movieSvc.Upsert(&movie)
+					if err != nil {
+						logging.Panic(err.Error())
+					}
+
+					logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "MOVIE", movie.ID, movie.OriginalTitle, movie.ObjectId))
+
+				} else if category == "tv_series" {
+
+					var tvSeries domain.TVSeries
+
+					err := json.Unmarshal([]byte(line), &tvSeries)
+					if err != nil {
+						logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
+					}
+
+					err = tvSvc.GetFromAPI(&tvSeries)
+					if err != nil {
+						logging.Error(err.Error())
+					}
+
+					err = tvSvc.Upsert(&tvSeries)
+					if err != nil {
+						logging.Panic(err.Error())
+					}
+
+					logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "TVSERIES", tvSeries.ID, tvSeries.OriginalName, tvSeries.ObjectId))
+
 				}
-
-				err = movieSvc.GetFromAPI(&movie)
-				if err != nil {
-					logging.Panic(err.Error())
-				}
-
-				err = movieSvc.Upsert(&movie)
-				if err != nil {
-					logging.Panic(err.Error())
-				}
-
-				logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "MOVIE", movie.ID, movie.OriginalTitle, movie.ObjectId))
 
 				// Release the semaphore
 				<-semaphore

@@ -1,6 +1,9 @@
 package domain
 
 type TVSeries struct {
+	ID                  int                 `json:"id,omitempty" bson:"id,omitempty"`
+	ObjectId            interface{}         `json:"_id,omitempty" bson:"_id,omitempty"`
+	ImdbID              string              `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
 	Adult               bool                `json:"adult,omitempty" bson:"adult,omitempty"`
 	BackdropPath        string              `json:"backdrop_path,omitempty" bson:"backdrop_path,omitempty"`
 	CreatedBy           []CreatedBy         `json:"created_by,omitempty" bson:"created_by,omitempty"`
@@ -8,7 +11,6 @@ type TVSeries struct {
 	FirstAirDate        string              `json:"first_air_date,omitempty" bson:"first_air_date,omitempty"`
 	Genres              []Genre             `json:"genres,omitempty" bson:"genres,omitempty"`
 	Homepage            string              `json:"homepage,omitempty" bson:"homepage,omitempty"`
-	ID                  int                 `json:"id,omitempty" bson:"id,omitempty"`
 	InProduction        bool                `json:"in_production,omitempty" bson:"in_production,omitempty"`
 	Languages           []string            `json:"languages,omitempty" bson:"languages,omitempty"`
 	LastAirDate         string              `json:"last_air_date,omitempty" bson:"last_air_date,omitempty"`

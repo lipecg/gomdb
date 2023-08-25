@@ -53,6 +53,9 @@ func (tc *tmdbClient) PingAPI() error {
 func (tc tmdbClient) GetFromAPI(entity *interface{}) error {
 	entityType := reflect.TypeOf(*entity)
 	entityTypeName := strings.ToLower(strings.Split(entityType.String(), ".")[1])
+	if entityTypeName == "tvseries" {
+		entityTypeName = "tv"
+	}
 	id := reflect.ValueOf(*entity).Elem().FieldByName("ID").Int()
 	err := tc.httpGet(fmt.Sprintf("%s/%v", entityTypeName, id), entity)
 	return err

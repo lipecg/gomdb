@@ -3,6 +3,7 @@ package database
 import (
 	"context"
 	"errors"
+	"fmt"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/logging"
 	"reflect"
@@ -72,10 +73,12 @@ func (ms mongoStore) Upsert(entity *interface{}) error {
 		return err
 	}
 
-	filter := bson.M{"id": (reflect.ValueOf(entity).Elem())}
+	filter := bson.M{"id": reflect.ValueOf(*entity).Elem().FieldByName("ID").Int()}
 	options := options.Replace().SetUpsert(true)
 
-	_, err = col.ReplaceOne(context.TODO(), filter, entity, options)
+	result, err := col.ReplaceOne(context.TODO(), filter, entity, options)
+
+	fmt.Print(result)
 
 	return err
 }

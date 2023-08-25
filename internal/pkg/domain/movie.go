@@ -3,7 +3,9 @@ package domain
 import "time"
 
 type Movie struct {
-	Entity
+	ID                  int                 `json:"id,omitempty" bson:"id,omitempty"`
+	ObjectId            interface{}         `json:"_id,omitempty" bson:"_id,omitempty"`
+	ImdbID              string              `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
 	Adult               bool                `json:"adult,omitempty" bson:"adult,omitempty"`
 	BackdropPath        string              `json:"backdrop_path,omitempty" bson:"backdrop_path,omitempty"`
 	BelongsToCollection interface{}         `json:"belongs_to_collection,omitempty" bson:"belongs_to_collection,omitempty"`
