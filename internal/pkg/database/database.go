@@ -19,6 +19,8 @@ func getMongoCollection(ms mongoStore, collection ...string) (*mongo.Collection,
 			return ms.Client.Database("gomdb").Collection("movies"), nil
 		} else if collection[0] == "*domain.TVSeries" {
 			return ms.Client.Database("gomdb").Collection("tvseries"), nil
+		} else if collection[0] == "*domain.Person" {
+			return ms.Client.Database("gomdb").Collection("people"), nil
 		}
 	}
 	return nil, errors.New("Cannot get collection")

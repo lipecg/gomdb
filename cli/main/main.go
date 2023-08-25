@@ -38,18 +38,13 @@ func main() {
 
 	api, err := tmdb.NewTmdbClient(tmdbURL, tmdbApiKey)
 
-	var svc interface{}
-
 	switch category {
 	case "movie", "movies":
 		category = "movie"
-		svc = app.NewMovieSvc(db, api)
 	case "tvseries", "tv_series", "tv":
 		category = "tv_series"
-		svc = app.NewTVSeriesSvc(db, api)
 	case "person", "people":
 		category = "person"
-		logging.Panic("Category not supported yet.")
 	case "tvnetwork", "tvnetworks", "tv_network", "tv_networks":
 		category = "tv_network"
 		logging.Panic("Category not supported yet.")
@@ -63,8 +58,6 @@ func main() {
 		log.Print("invalid option")
 		return
 	}
-
-	fmt.Println(svc)
 
 	startAt := 1
 	limit := -1
@@ -99,6 +92,7 @@ func main() {
 
 	movieSvc := app.NewMovieSvc(db, api)
 	tvSvc := app.NewTVSeriesSvc(db, api)
+	personSvc := app.NewPersonSvc(db, api)
 
 	var wg sync.WaitGroup
 
@@ -172,6 +166,27 @@ func main() {
 					}
 
 					logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "TVSERIES", tvSeries.ID, tvSeries.OriginalName, tvSeries.ObjectId))
+
+				} else if category == "person" {
+
+					var person domain.Person
+
+					err := json.Unmarshal([]byte(line), &person)
+					if err != nil {
+						logging.Info(fmt.Sprintf("%s %v \n", "ERROR", err))
+					}
+
+					err = personSvc.GetFromAPI(&person)
+					if err != nil {
+						logging.Error(err.Error())
+					}
+
+					err = personSvc.Upsert(&person)
+					if err != nil {
+						logging.Panic(err.Error())
+					}
+
+					logging.Info(fmt.Sprintf("%s %v - %s - %v \n", "PERSON", person.ID, person.Name, person.ObjectId))
 
 				}
 
