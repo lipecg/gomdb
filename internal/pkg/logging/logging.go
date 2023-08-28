@@ -19,19 +19,19 @@ func init() {
 
 func Info(message string) {
 	message = fmt.Sprintf("%s %s", "INFO", message)
-	fmt.Printf(message)
-	log.Printf(message)
+	fmt.Println(message)
+	log.Println(message)
 }
 
 func Error(message string) {
 	message = fmt.Sprintf("%s %s", "ERROR", message)
-	fmt.Printf(message)
-	log.Printf(message)
+	fmt.Println(message)
+	log.Println(message)
 }
 
 func Panic(message string) {
 	message = fmt.Sprintf("%s %s", "PANIC", message)
-	fmt.Printf(message)
+	fmt.Println(message)
 	log.Panicf(message)
 }
 

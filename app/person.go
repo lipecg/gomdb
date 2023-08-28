@@ -19,12 +19,12 @@ func NewPersonSvc(db domain.PersonDB, api domain.PersonAPI) domain.PersonSvc {
 }
 
 func (ps personSvc) Get(id int) (*domain.Person, error) {
-	person, err := ps.DB.Get(id)
+	person, err := ps.DB.Get(id, "people")
 	return (*person).(*domain.Person), err
 }
 
 func (ps personSvc) List(query string) ([]*domain.Person, error) {
-	person, err := ps.DB.List(query)
+	person, err := ps.DB.List(query, "people")
 	personSlice := make([]*domain.Person, len(person))
 	for i, v := range person {
 		person, ok := (*v).(*domain.Person)
@@ -39,10 +39,10 @@ func (ps personSvc) List(query string) ([]*domain.Person, error) {
 
 func (ps personSvc) Upsert(person *domain.Person) error {
 	var personDB interface{} = person
-	return ps.DB.Upsert(&personDB)
+	return ps.DB.Upsert(&personDB, "people")
 }
 
 func (ps personSvc) GetFromAPI(person *domain.Person) error {
 	var personAPI interface{} = person
-	return ps.API.GetFromAPI(&personAPI)
+	return ps.API.GetFromAPI(&personAPI, "people")
 }

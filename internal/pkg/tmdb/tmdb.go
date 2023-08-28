@@ -2,81 +2,20 @@ package tmdb
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/file"
-	"gomdb/internal/pkg/logging"
 	"log"
 	"net/http"
-	"reflect"
-	"strings"
 )
 
-type tmdbClient struct {
-	_apiUrl string
-	_apiKey string
-}
+const tmdbURL = "https://api.themoviedb.org/3/"
+const tmdbApiKey = "?api_key=bdd0d7bc1bd4ee8f7c6b5fa9dc5611c1"
+const fileDownloadURL = "http://files.tmdb.org/p/exports/"
+const fileDownloadDir = "./daily_id_exports/"
 
-func NewTmdbClient(apiUrl, apiKey string) (domain.EntityAPI, error) {
+func Get(query string, entity *interface{}) error {
 
-	client := tmdbClient{
-		_apiUrl: apiUrl,
-		_apiKey: apiKey,
-	}
-
-	err := client.PingAPI()
-
-	if err != nil {
-		logging.Panic(err.Error())
-	}
-
-	return client, err
-}
-
-func (tc *tmdbClient) PingAPI() error {
-	url := fmt.Sprintf("%s/configuration%s", tc._apiUrl, tc._apiKey)
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		err = errors.New(fmt.Sprintf("API ping failed: %s", resp.Status))
-	}
-
-	return err
-}
-
-func (tc tmdbClient) GetFromAPI(entity *interface{}) error {
-	entityType := reflect.TypeOf(*entity)
-	entityTypeName := strings.ToLower(strings.Split(entityType.String(), ".")[1])
-	if entityTypeName == "tvseries" {
-		entityTypeName = "tv"
-	}
-	id := reflect.ValueOf(*entity).Elem().FieldByName("ID").Int()
-	err := tc.httpGet(fmt.Sprintf("%s/%v", entityTypeName, id), entity)
-	return err
-}
-
-func FetchFileFromURL(url string, filePath string) error {
-	resp, err := http.Get(url)
-	if err != nil {
-		return err
-	}
-
-	defer resp.Body.Close()
-
-	file.CopyFile(filePath, resp.Body)
-
-	return err
-}
-
-func (tc tmdbClient) httpGet(query string, entity *interface{}) error {
-
-	url := tc._apiUrl + query + tc._apiKey
+	url := tmdbURL + query + tmdbApiKey
 
 	resp, err := http.Get(url)
 
@@ -95,4 +34,19 @@ func (tc tmdbClient) httpGet(query string, entity *interface{}) error {
 
 	return err
 
+}
+
+func FetchFileFromURL(fileName string) error {
+	resp, err := http.Get(fileDownloadURL + fileName)
+	if err != nil {
+		return err
+	}
+
+	defer resp.Body.Close()
+
+	filePath := fileDownloadDir + fileName
+
+	file.CopyFile(filePath, resp.Body)
+
+	return err
 }

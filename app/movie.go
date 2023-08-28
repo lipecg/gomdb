@@ -19,12 +19,12 @@ func NewMovieSvc(db domain.MovieDB, api domain.MovieAPI) domain.MovieSvc {
 }
 
 func (ms movieSvc) Get(id int) (*domain.Movie, error) {
-	movie, err := ms.DB.Get(id)
+	movie, err := ms.DB.Get(id, "movies")
 	return (*movie).(*domain.Movie), err
 }
 
 func (ms movieSvc) List(query string) ([]*domain.Movie, error) {
-	movies, err := ms.DB.List(query)
+	movies, err := ms.DB.List(query, "movies")
 	movieSlice := make([]*domain.Movie, len(movies))
 	for i, v := range movies {
 		movie, ok := (*v).(*domain.Movie)
@@ -39,10 +39,10 @@ func (ms movieSvc) List(query string) ([]*domain.Movie, error) {
 
 func (ms movieSvc) Upsert(movie *domain.Movie) error {
 	var movieDB interface{} = movie
-	return ms.DB.Upsert(&movieDB)
+	return ms.DB.Upsert(&movieDB, "movies")
 }
 
 func (ms movieSvc) GetFromAPI(movie *domain.Movie) error {
 	var movieAPI interface{} = movie
-	return ms.API.GetFromAPI(&movieAPI)
+	return ms.API.GetFromAPI(&movieAPI, "movies")
 }

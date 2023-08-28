@@ -19,12 +19,12 @@ func NewTVSeriesSvc(db domain.TVSeriesDB, api domain.TVSeriesAPI) domain.TVSerie
 }
 
 func (ms tvSeriesSvc) Get(id int) (*domain.TVSeries, error) {
-	tvSeries, err := ms.DB.Get(id)
+	tvSeries, err := ms.DB.Get(id, "tvseries")
 	return (*tvSeries).(*domain.TVSeries), err
 }
 
 func (ms tvSeriesSvc) List(query string) ([]*domain.TVSeries, error) {
-	tvseries, err := ms.DB.List(query)
+	tvseries, err := ms.DB.List(query, "tvseries")
 	tvseriesSlice := make([]*domain.TVSeries, len(tvseries))
 	for i, v := range tvseries {
 		tvseries, ok := (*v).(*domain.TVSeries)
@@ -39,10 +39,10 @@ func (ms tvSeriesSvc) List(query string) ([]*domain.TVSeries, error) {
 
 func (ms tvSeriesSvc) Upsert(tvSeries *domain.TVSeries) error {
 	var tvSeriesDB interface{} = tvSeries
-	return ms.DB.Upsert(&tvSeriesDB)
+	return ms.DB.Upsert(&tvSeriesDB, "tvseries")
 }
 
 func (ms tvSeriesSvc) GetFromAPI(tvSeries *domain.TVSeries) error {
 	var tvSeriesAPI interface{} = tvSeries
-	return ms.API.GetFromAPI(&tvSeriesAPI)
+	return ms.API.GetFromAPI(&tvSeriesAPI, "tvseries")
 }

@@ -1,19 +1,18 @@
 package domain
 
 type Entity struct {
-	ID       int         `json:"id,omitempty" bson:"id,omitempty"`
-	ObjectId interface{} `json:"_id,omitempty" bson:"_id,omitempty"`
-	ImdbID   string      `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
+	ID   int         `json:"id,omitempty" bson:"id,omitempty"`
+	Data interface{} `json:"data,omitempty" bson:"data,omitempty"`
 }
 
 type EntityDB interface {
-	Get(id int) (*interface{}, error)
-	List(search string) ([]*interface{}, error)
-	Upsert(e *interface{}) error
+	Get(id int, collection string) (*interface{}, error)
+	List(search string, collection string) ([]*interface{}, error)
+	Upsert(e *interface{}, collection string) error
 }
 
 type EntityAPI interface {
-	GetFromAPI(e *interface{}) error
+	GetFromAPI(e *interface{}, endpoint string) error
 	// ListFromAPI(search string) ([]*interface{}, error)
 	// ListChangedFromAPI(search string) ([]*interface{}, error)
 }
