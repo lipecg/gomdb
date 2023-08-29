@@ -45,6 +45,8 @@ var categoryPropertiesMap = map[string]categoryProperties{
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
 var validActions = []string{"import", "sync", "download-files"}
 
+const requestsPerSecond = 100
+
 func setExecParams(execArgs []string) error {
 
 	if len(execArgs) < 1 {
@@ -151,11 +153,10 @@ func syncData() error {
 	var wg sync.WaitGroup
 
 	// Create a channel to limit the number of concurrent API calls
-	concurrency := 40
-	semaphore := make(chan struct{}, concurrency)
+	semaphore := make(chan struct{}, requestsPerSecond)
 
 	// Create a rate limiter to respect the rate limit of 40 calls per second
-	rateLimit := time.Tick(time.Second / 40)
+	rateLimit := time.Tick(time.Second / requestsPerSecond)
 
 	for _, entity := range *updatedEntities {
 
@@ -226,11 +227,10 @@ func importData() error {
 	var wg sync.WaitGroup
 
 	// Create a channel to limit the number of concurrent API calls
-	concurrency := 40
-	semaphore := make(chan struct{}, concurrency)
+	semaphore := make(chan struct{}, requestsPerSecond)
 
 	// Create a rate limiter to respect the rate limit of 10 calls per second
-	rateLimit := time.Tick(time.Second / 10)
+	rateLimit := time.Tick(time.Second / requestsPerSecond)
 
 	count := 1
 
