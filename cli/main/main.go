@@ -21,13 +21,22 @@ import (
 
 func main() {
 
-	if os.Args[1:][0] == "-if" || os.Args[1:][0] == "import-files" {
+	if os.Args[1:][0] == "download-files" {
 		importDailyIdFiles()
 		return
 	}
 
+	if os.Args[1:][0] != "import" {
+		logging.Panic("invalid option")
+		return
+	}
+
+	startTime := time.Now()
+
+	logging.Info(fmt.Sprintf("Initiating %s import %s", os.Args[1:][1], startTime.Format("2006-01-02 15:04:05")))
+
 	var category, filePrefix, dbCollection, apiEndpoint string
-	category = os.Args[1:][0]
+	category = os.Args[1:][1]
 
 	switch category {
 	case "movie", "movies":
@@ -74,12 +83,12 @@ func main() {
 	startAt := 1
 	limit := -1
 
-	if len(os.Args[1:]) >= 2 {
-		startAt, _ = strconv.Atoi(os.Args[1:][1])
+	if len(os.Args[1:]) >= 3 {
+		startAt, _ = strconv.Atoi(os.Args[1:][2])
 	}
 
-	if len(os.Args[1:]) >= 3 {
-		limit, _ = strconv.Atoi(os.Args[1:][2])
+	if len(os.Args[1:]) >= 4 {
+		limit, _ = strconv.Atoi(os.Args[1:][3])
 	}
 
 	today := time.Now().Format("01_02_2006")
@@ -173,6 +182,9 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		logging.Panic(err.Error())
 	}
+
+	endTime := time.Now()
+	logging.Info(fmt.Sprintf("Finished %s import %s (%v)", os.Args[1:][1], endTime.Format("2006-01-02 15:04:05"), endTime.Sub(startTime)))
 
 	logging.Close()
 
