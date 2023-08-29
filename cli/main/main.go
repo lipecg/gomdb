@@ -43,7 +43,7 @@ var categoryPropertiesMap = map[string]categoryProperties{
 }
 
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
-var validActions = []string{"import", "download-files"}
+var validActions = []string{"import", "sync", "download-files"}
 
 func setExecParams(execArgs []string) error {
 
@@ -66,6 +66,10 @@ func setExecParams(execArgs []string) error {
 	execParams.categoryInfo, ok = categoryPropertiesMap[execParams.category]
 	if !ok {
 		return fmt.Errorf("invalid category: valid options are %v", validCategories)
+	}
+
+	if execParams.action == "sync" {
+		return nil
 	}
 
 	var err error
@@ -105,7 +109,7 @@ func init() {
 func main() {
 
 	startTime := time.Now()
-	logging.Infoln(fmt.Sprintf("Initiating %s %s %s", execParams.action, execParams.category, startTime.Format("2006-01-02 15:04:05")))
+	logging.Infoln(fmt.Sprintf("Starting %s %s %s", execParams.action, execParams.category, startTime.Format("2006-01-02 15:04:05")))
 
 	defer func() {
 		endTime := time.Now()
@@ -115,9 +119,12 @@ func main() {
 
 	var err error
 
-	if execParams.action == "download-files" {
+	switch execParams.action {
+	case "download-files":
 		err = importDailyIdFiles()
-	} else {
+	case "sync":
+		err = syncData()
+	case "import":
 		err = importData()
 	}
 
@@ -125,6 +132,74 @@ func main() {
 		logging.Error(err.Error())
 	}
 
+}
+
+func syncData() error {
+
+	var updatedEntities *[]domain.Entity = new([]domain.Entity)
+
+	err := tmdb.GetUpdatedEntities(execParams.categoryInfo.apiEndpoint, updatedEntities, tmdb.SearchOptions{Page: 1})
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+
+	countEntities := len(*updatedEntities)
+	countUpdatedEntities := 0
+
+	logging.Infoln(fmt.Sprintf("Found %d updated %s", countEntities, execParams.category))
+
+	var wg sync.WaitGroup
+
+	// Create a channel to limit the number of concurrent API calls
+	concurrency := 40
+	semaphore := make(chan struct{}, concurrency)
+
+	// Create a rate limiter to respect the rate limit of 40 calls per second
+	rateLimit := time.Tick(time.Second / 40)
+
+	for _, entity := range *updatedEntities {
+
+		wg.Add(1)
+
+		go func(ent domain.Entity) {
+
+			defer wg.Done()
+
+			// Acquire a semaphore to limit the number of concurrent API calls
+			semaphore <- struct{}{}
+
+			// Wait for the rate limiter to allow the API call
+			<-rateLimit
+
+			query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, ent.ID)
+
+			err := tmdb.Get(query, &ent.Data)
+			if err != nil {
+				logging.Error(err.Error())
+				return
+			}
+
+			result, err := database.Upsert(&ent, execParams.categoryInfo.dbCollection)
+			if err != nil {
+				logging.Error(err.Error())
+				return
+			}
+
+			countUpdatedEntities++
+			completion := fmt.Sprintf("%d/%d", countUpdatedEntities, countEntities)
+
+			logging.Infoln(fmt.Sprintf("%s %s %v - %v", strings.ToUpper(execParams.category), completion, ent.ID, result))
+
+			// Release the semaphore
+			<-semaphore
+
+		}(entity)
+
+	}
+
+	wg.Wait()
+
+	return nil
 }
 
 func importData() error {

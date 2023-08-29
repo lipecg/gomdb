@@ -26,3 +26,10 @@ type Genre struct {
 	ID   int    `json:"id,omitempty" bson:"id,omitempty"`
 	Name string `json:"name,omitempty" bson:"name,omitempty"`
 }
+
+type SearchResult struct {
+	Results      []Entity `json:"results"`
+	Page         int      `json:"page"`
+	TotalPages   int      `json:"total_pages"`
+	TotalResults int      `json:"total_results"`
+}
