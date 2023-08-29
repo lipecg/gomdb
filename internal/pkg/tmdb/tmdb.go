@@ -44,9 +44,13 @@ func FetchFileFromURL(fileName string) error {
 
 	defer resp.Body.Close()
 
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("search query failed: %s", resp.Status)
+	}
+
 	filePath := fileDownloadDir + fileName
 
-	file.CopyFile(filePath, resp.Body)
+	err = file.CopyFile(filePath, resp.Body)
 
 	return err
 }

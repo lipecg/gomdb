@@ -19,8 +19,12 @@ func init() {
 
 func Info(message string) {
 	message = fmt.Sprintf("%s %s", "INFO", message)
-	fmt.Println(message)
-	log.Println(message)
+	fmt.Print(message)
+	log.Print(message)
+}
+
+func Infoln(message string) {
+	Info(message + "\n")
 }
 
 func Error(message string) {

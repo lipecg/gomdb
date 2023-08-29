@@ -5,7 +5,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -19,80 +18,118 @@ import (
 	"gomdb/internal/pkg/tmdb"
 )
 
+type categoryProperties struct {
+	filePrefix   string
+	dbCollection string
+	apiEndpoint  string
+}
+
+type params struct {
+	action       string
+	category     string
+	categoryInfo categoryProperties
+	startAt      int
+	limit        int
+}
+
+var execParams params = params{startAt: 1, limit: -1}
+var categoryPropertiesMap = map[string]categoryProperties{
+	"movies":      {"movie", "movies", "movie"},
+	"tvseries":    {"tv_series", "tvseries", "tv"},
+	"people":      {"person", "people", "person"},
+	"tvnetworks":  {"tv_network", "tvnetworks", "network"},
+	"collections": {"collection", "collections", "collection"},
+	"keywords":    {"keyword", "keywords", "keyword"},
+}
+
+var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
+var validActions = []string{"import", "download-files"}
+
+func setExecParams(execArgs []string) error {
+
+	if len(execArgs) < 1 {
+		return fmt.Errorf("missing action: valid options are %v", validActions)
+	}
+
+	if !sliceContains(validActions, execArgs[0]) {
+		return fmt.Errorf("invalid action: valid options are %v", validActions)
+	}
+
+	execParams.action = strings.ToLower(execArgs[0])
+
+	if execParams.action == "download-files" {
+		return nil
+	}
+
+	var ok bool
+	execParams.category = strings.ToLower(execArgs[1])
+	execParams.categoryInfo, ok = categoryPropertiesMap[execParams.category]
+	if !ok {
+		return fmt.Errorf("invalid category: valid options are %v", validCategories)
+	}
+
+	var err error
+
+	if len(os.Args[1:]) > 2 && os.Args[1:][2] != "" {
+		execParams.startAt, err = strconv.Atoi(os.Args[1:][2])
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(os.Args[1:]) > 3 && os.Args[1:][3] != "" {
+		execParams.limit, err = strconv.Atoi(os.Args[1:][3])
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func sliceContains(collection []string, s string) bool {
+	for _, item := range collection {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+func init() {
+	if err := setExecParams(os.Args[1:]); err != nil {
+		logging.Panic(err.Error())
+	}
+}
+
 func main() {
 
-	if os.Args[1:][0] == "download-files" {
-		importDailyIdFiles()
-		return
-	}
-
-	if os.Args[1:][0] != "import" {
-		logging.Panic("invalid option")
-		return
-	}
-
 	startTime := time.Now()
+	logging.Infoln(fmt.Sprintf("Initiating %s %s %s", execParams.action, execParams.category, startTime.Format("2006-01-02 15:04:05")))
 
-	logging.Info(fmt.Sprintf("Initiating %s import %s", os.Args[1:][1], startTime.Format("2006-01-02 15:04:05")))
+	defer func() {
+		endTime := time.Now()
+		logging.Infoln(fmt.Sprintf("Finished %s %s %s (%v)", execParams.action, execParams.category, endTime.Format("2006-01-02 15:04:05"), endTime.Sub(startTime)))
+		logging.Close()
+	}()
 
-	var category, filePrefix, dbCollection, apiEndpoint string
-	category = os.Args[1:][1]
+	var err error
 
-	switch category {
-	case "movie", "movies":
-		category = "Movie"
-		filePrefix = "movie"
-		dbCollection = "movies"
-		apiEndpoint = "movie"
-
-	case "tvseries", "tv_series", "tv":
-		category = "TVSeries"
-		filePrefix = "tv_series"
-		dbCollection = "tvseries"
-		apiEndpoint = "tv"
-
-	case "person", "people":
-		category = "Person"
-		filePrefix = "person"
-		dbCollection = "people"
-		apiEndpoint = "person"
-
-	case "tvnetwork", "tvnetworks", "tv_network", "tv_networks":
-		category = "TVNetwork"
-		filePrefix = "tv_network"
-		dbCollection = "tvnetworks"
-		apiEndpoint = "network"
-
-	case "collection", "collections":
-		category = "Collection"
-		filePrefix = "collection"
-		dbCollection = "collections"
-		apiEndpoint = "collection"
-
-	case "keyword", "keywords":
-		category = "Keyword"
-		filePrefix = "keyword"
-		dbCollection = "keywords"
-		apiEndpoint = "keyword"
-
-	default:
-		log.Print("invalid option")
-		return
+	if execParams.action == "download-files" {
+		err = importDailyIdFiles()
+	} else {
+		err = importData()
 	}
 
-	startAt := 1
-	limit := -1
-
-	if len(os.Args[1:]) >= 3 {
-		startAt, _ = strconv.Atoi(os.Args[1:][2])
+	if err != nil {
+		logging.Error(err.Error())
 	}
 
-	if len(os.Args[1:]) >= 4 {
-		limit, _ = strconv.Atoi(os.Args[1:][3])
-	}
+}
 
+func importData() error {
 	today := time.Now().Format("01_02_2006")
-	fileName := fmt.Sprintf("./daily_id_exports/%s_ids_%s.json.gz", filePrefix, today)
+	fileName := fmt.Sprintf("./daily_id_exports/%s_ids_%s.json.gz", execParams.categoryInfo.filePrefix, today)
 
 	// Open the gzipped file
 	file, err := os.Open(fileName)
@@ -124,7 +161,7 @@ func main() {
 
 	for scanner.Scan() {
 
-		if limit > 0 && count >= (startAt+limit) {
+		if execParams.limit > 0 && count >= (execParams.startAt+execParams.limit) {
 			break
 		}
 
@@ -134,7 +171,7 @@ func main() {
 
 			defer wg.Done()
 
-			if count >= startAt {
+			if count >= execParams.startAt {
 
 				// Acquire a semaphore to limit the number of concurrent API calls
 				semaphore <- struct{}{}
@@ -150,7 +187,7 @@ func main() {
 					return
 				}
 
-				query := fmt.Sprintf("%s/%v", apiEndpoint, entity.ID)
+				query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, entity.ID)
 
 				err = tmdb.Get(query, &entity.Data)
 				if err != nil {
@@ -158,13 +195,13 @@ func main() {
 					return
 				}
 
-				result, err := database.Upsert(entity, dbCollection)
+				result, err := database.Upsert(entity, execParams.categoryInfo.dbCollection)
 				if err != nil {
 					logging.Error(err.Error())
 					return
 				}
 
-				logging.Info(fmt.Sprintf("%s %v - %v", strings.ToUpper(category), entity.ID, result))
+				logging.Infoln(fmt.Sprintf("%s %v - %v", strings.ToUpper(execParams.category), entity.ID, result))
 
 				// Release the semaphore
 				<-semaphore
@@ -183,27 +220,22 @@ func main() {
 		logging.Panic(err.Error())
 	}
 
-	endTime := time.Now()
-	logging.Info(fmt.Sprintf("Finished %s import %s (%v)", os.Args[1:][1], endTime.Format("2006-01-02 15:04:05"), endTime.Sub(startTime)))
-
-	logging.Close()
-
+	return nil
 }
 
 func importDailyIdFiles() error {
 
-	var err error
+	for k, v := range categoryPropertiesMap {
 
-	for _, cat := range domain.CategoryList {
-		logging.Info(fmt.Sprintf("%s - %s - %s", cat.MediaType, cat.FileName, file.GetFileName(cat.FileName)))
-
-		fileName := file.GetFileName(cat.FileName)
+		fileName := file.GetFileName(v.filePrefix + "_ids_01_02_2006.json.gz")
 		err := tmdb.FetchFileFromURL(fileName)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("%s %s - %s", k, fileName, err.Error())
 		}
+
+		logging.Infoln(fmt.Sprintf("%s %s - OK", k, fileName))
 	}
 
-	return err
+	return nil
 }
