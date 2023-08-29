@@ -45,7 +45,7 @@ var categoryPropertiesMap = map[string]categoryProperties{
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
 var validActions = []string{"import", "sync", "download-files"}
 
-const requestsPerSecond = 100
+const requestsPerSecond = 50
 
 func setExecParams(execArgs []string) error {
 
@@ -180,6 +180,9 @@ func syncData() error {
 				return
 			}
 
+			// Release the semaphore
+			<-semaphore
+
 			result, err := database.Upsert(&ent, execParams.categoryInfo.dbCollection)
 			if err != nil {
 				logging.Error(err.Error())
@@ -190,9 +193,6 @@ func syncData() error {
 			completion := fmt.Sprintf("%d/%d", countUpdatedEntities, countEntities)
 
 			logging.Infoln(fmt.Sprintf("%s %s %v - %v", strings.ToUpper(execParams.category), completion, ent.ID, result))
-
-			// Release the semaphore
-			<-semaphore
 
 		}(entity)
 
