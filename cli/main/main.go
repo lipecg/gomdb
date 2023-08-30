@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"compress/gzip"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -16,6 +17,8 @@ import (
 	"gomdb/internal/pkg/file"
 	"gomdb/internal/pkg/logging"
 	"gomdb/internal/pkg/tmdb"
+
+	"golang.org/x/time/rate"
 )
 
 type categoryProperties struct {
@@ -45,7 +48,7 @@ var categoryPropertiesMap = map[string]categoryProperties{
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
 var validActions = []string{"import", "sync", "download-files"}
 
-const requestsPerSecond = 50
+const requestsPerSecond = 45
 
 func setExecParams(execArgs []string) error {
 
@@ -152,11 +155,8 @@ func syncData() error {
 
 	var wg sync.WaitGroup
 
-	// Create a channel to limit the number of concurrent API calls
-	semaphore := make(chan struct{}, requestsPerSecond)
-
-	// Create a rate limiter to respect the rate limit of 40 calls per second
-	rateLimit := time.Tick(time.Second / requestsPerSecond)
+	// Create a rate limiter that allows 50 events per second
+	limiter := rate.NewLimiter(rate.Every(time.Second/requestsPerSecond), 1)
 
 	for _, entity := range *updatedEntities {
 
@@ -166,11 +166,7 @@ func syncData() error {
 
 			defer wg.Done()
 
-			// Acquire a semaphore to limit the number of concurrent API calls
-			semaphore <- struct{}{}
-
-			// Wait for the rate limiter to allow the API call
-			<-rateLimit
+			limiter.Wait(context.Background())
 
 			query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, ent.ID)
 
@@ -179,9 +175,6 @@ func syncData() error {
 				logging.Error(err.Error())
 				return
 			}
-
-			// Release the semaphore
-			<-semaphore
 
 			result, err := database.Upsert(&ent, execParams.categoryInfo.dbCollection)
 			if err != nil {
@@ -226,11 +219,8 @@ func importData() error {
 
 	var wg sync.WaitGroup
 
-	// Create a channel to limit the number of concurrent API calls
-	semaphore := make(chan struct{}, requestsPerSecond)
-
-	// Create a rate limiter to respect the rate limit of 10 calls per second
-	rateLimit := time.Tick(time.Second / requestsPerSecond)
+	// Create a rate limiter that allows 50 events per second
+	limiter := rate.NewLimiter(rate.Every(time.Second/requestsPerSecond), 1)
 
 	count := 1
 
@@ -248,12 +238,6 @@ func importData() error {
 
 			if count >= execParams.startAt {
 
-				// Acquire a semaphore to limit the number of concurrent API calls
-				semaphore <- struct{}{}
-
-				// Wait for the rate limiter to allow the API call
-				<-rateLimit
-
 				var entity *domain.Entity
 
 				err := json.Unmarshal([]byte(line), &entity)
@@ -263,6 +247,8 @@ func importData() error {
 				}
 
 				query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, entity.ID)
+
+				limiter.Wait(context.Background())
 
 				err = tmdb.Get(query, &entity.Data)
 				if err != nil {
@@ -277,10 +263,6 @@ func importData() error {
 				}
 
 				logging.Infoln(fmt.Sprintf("%s %v - %v", strings.ToUpper(execParams.category), entity.ID, result))
-
-				// Release the semaphore
-				<-semaphore
-
 			}
 
 		}(scanner.Text())
