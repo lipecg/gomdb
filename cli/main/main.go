@@ -28,14 +28,15 @@ type categoryProperties struct {
 }
 
 type params struct {
-	action       string
-	category     string
-	categoryInfo categoryProperties
-	startAt      int
-	limit        int
+	action            string
+	category          string
+	categoryInfo      categoryProperties
+	startAt           int
+	limit             int
+	requestsPerSecond int
 }
 
-var execParams params = params{startAt: 1, limit: -1}
+var execParams params = params{startAt: 1, limit: -1, requestsPerSecond: 40}
 var categoryPropertiesMap = map[string]categoryProperties{
 	"movies":      {"movie", "movies", "movie"},
 	"tvseries":    {"tv_series", "tvseries", "tv"},
@@ -47,8 +48,6 @@ var categoryPropertiesMap = map[string]categoryProperties{
 
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
 var validActions = []string{"import", "sync", "download-files"}
-
-const requestsPerSecond = 45
 
 func setExecParams(execArgs []string) error {
 
@@ -88,6 +87,13 @@ func setExecParams(execArgs []string) error {
 
 	if len(os.Args[1:]) > 3 && os.Args[1:][3] != "" {
 		execParams.limit, err = strconv.Atoi(os.Args[1:][3])
+		if err != nil {
+			return err
+		}
+	}
+
+	if len(os.Args[1:]) > 4 && os.Args[1:][4] != "" {
+		execParams.requestsPerSecond, err = strconv.Atoi(os.Args[1:][4])
 		if err != nil {
 			return err
 		}
@@ -156,7 +162,7 @@ func syncData() error {
 	var wg sync.WaitGroup
 
 	// Create a rate limiter that allows 50 events per second
-	limiter := rate.NewLimiter(rate.Every(time.Second/requestsPerSecond), 1)
+	limiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
 
 	for _, entity := range *updatedEntities {
 
@@ -220,7 +226,7 @@ func importData() error {
 	var wg sync.WaitGroup
 
 	// Create a rate limiter that allows 50 events per second
-	limiter := rate.NewLimiter(rate.Every(time.Second/requestsPerSecond), 1)
+	limiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
 
 	count := 1
 
