@@ -245,22 +245,22 @@ func importData() error {
 			if count >= execParams.startAt {
 
 				var entity *domain.Entity
+				// {"adult":false,"id":9298,"original_title":"Ali G Indahouse","popularity":11.404,"video":false}
 
 				err := json.Unmarshal([]byte(line), &entity)
 				if err != nil {
 					logging.Error(fmt.Sprintf("%s %v \n", "ERROR", err))
 					return
 				}
-
-				query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, entity.ID)
+				// query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, entity.ID)
 
 				limiter.Wait(context.Background())
 
-				err = tmdb.Get(query, &entity.Data)
-				if err != nil {
-					logging.Error(err.Error())
-					return
-				}
+				// err = tmdb.Get(query, &entity.Data)
+				// if err != nil {
+				// 	logging.Error(err.Error())
+				// 	return
+				// }
 
 				result, err := database.Upsert(entity, execParams.categoryInfo.dbCollection)
 				if err != nil {

@@ -4,13 +4,14 @@ import (
 	"context"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/logging"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb+srv://gomdb:AS6pjaMXYuCpaMkr@movies.ojtvno4.mongodb.net/?retryWrites=true&w=majority"
+const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
 var client *mongo.Client
 var db *mongo.Database
@@ -21,7 +22,7 @@ func init() {
 	if err != nil {
 		logging.Panic(err.Error())
 	}
-	db = client.Database("movies")
+	db = client.Database("gomdb")
 }
 
 func getMongoCollection(collection string) *mongo.Collection {
@@ -29,12 +30,15 @@ func getMongoCollection(collection string) *mongo.Collection {
 }
 
 func Upsert(entity *domain.Entity, collection string) (*mongo.UpdateResult, error) {
+
+	entity.Updated = time.Now()
+
 	col := getMongoCollection(collection)
 
 	filter := bson.M{"id": entity.ID}
 	options := options.Replace().SetUpsert(true)
 
-	result, err := col.ReplaceOne(context.TODO(), filter, entity.Data, options)
+	result, err := col.ReplaceOne(context.TODO(), filter, entity, options)
 
 	return result, err
 }

@@ -14,15 +14,19 @@ func main() {
 	})
 
 	http.HandleFunc("/tvseries", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "TV Series!")
+		fmt.Fprintf(w, "TV SHOWS weeee!")
 	})
 
 	http.HandleFunc("/people", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "People!")
+		fmt.Fprintf(w, "Peoplesssss!")
 	})
 
 	http.HandleFunc("/tvnetworks", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintf(w, "TV Networks!")
+	})
+
+	http.HandleFunc("/keywords", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Keywords!")
 	})
 
 	fmt.Println("Listening on port 8080...")

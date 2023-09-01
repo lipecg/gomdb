@@ -20,4 +20,4 @@ CMD ["./gomdb-api"]
 
 
 # docker build -t gomdb-api:0.1 .
-# docker run -p 8080:8080 gomdb-api:0.1
+# docker run --name gomdb-api -p 8080:8080 gomdb-api:0.1 --auth
