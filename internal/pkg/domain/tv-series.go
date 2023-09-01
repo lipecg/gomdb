@@ -14,7 +14,7 @@ type TVSeries struct {
 	InProduction        bool                `json:"in_production,omitempty" bson:"in_production,omitempty"`
 	Languages           []string            `json:"languages,omitempty" bson:"languages,omitempty"`
 	LastAirDate         string              `json:"last_air_date,omitempty" bson:"last_air_date,omitempty"`
-	LastEpisodeToAir    LastEpisodeToAir    `json:"last_episode_to_air,omitempty" bson:"last_episode_to_air,omitempty"`
+	LastEpisodeToAir    interface{}         `json:"last_episode_to_air,omitempty" bson:"last_episode_to_air,omitempty"`
 	Name                string              `json:"name,omitempty" bson:"name,omitempty"`
 	NextEpisodeToAir    interface{}         `json:"next_episode_to_air,omitempty" bson:"next_episode_to_air,omitempty"`
 	Networks            []TvNetwork         `json:"networks,omitempty" bson:"networks,omitempty"`
@@ -66,20 +66,4 @@ type Season struct {
 	PosterPath   string  `json:"poster_path,omitempty" bson:"poster_path,omitempty"`
 	SeasonNumber int     `json:"season_number,omitempty" bson:"season_number,omitempty"`
 	VoteAverage  float64 `json:"vote_average,omitempty" bson:"vote_average,omitempty"`
-}
-
-type LastEpisodeToAir struct {
-	ID             int     `json:"id,omitempty" bson:"id,omitempty"`
-	Name           string  `json:"name,omitempty" bson:"name,omitempty"`
-	Overview       string  `json:"overview,omitempty" bson:"overview,omitempty"`
-	VoteAverage    float64 `json:"vote_average,omitempty" bson:"vote_average,omitempty"`
-	VoteCount      int     `json:"vote_count,omitempty" bson:"vote_count,omitempty"`
-	AirDate        string  `json:"air_date,omitempty" bson:"air_date,omitempty"`
-	EpisodeNumber  int     `json:"episode_number,omitempty" bson:"episode_number,omitempty"`
-	EpisodeType    string  `json:"episode_type,omitempty" bson:"episode_type,omitempty"`
-	ProductionCode string  `json:"production_code,omitempty" bson:"production_code,omitempty"`
-	Runtime        int     `json:"runtime,omitempty" bson:"runtime,omitempty"`
-	SeasonNumber   int     `json:"season_number,omitempty" bson:"season_number,omitempty"`
-	ShowID         int     `json:"show_id,omitempty" bson:"show_id,omitempty"`
-	StillPath      string  `json:"still_path,omitempty" bson:"still_path,omitempty"`
 }
