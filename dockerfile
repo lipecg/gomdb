@@ -13,7 +13,11 @@ RUN go mod download
 # RUN chmod +x /app/gomdb/cli/main
 
 # # Builds your app with optional configuration
-RUN go build -o gomdb . 
+RUN go build -o gomdb-api . 
 
-EXPOSE 22
-ENTRYPOINT ["/bin/bash", "-c", "/app"]
+EXPOSE 8080
+CMD ["./gomdb-api"]
+
+
+# docker build -t gomdb-api:0.1 .
+# docker run -p 8080:8080 gomdb-api:0.1
