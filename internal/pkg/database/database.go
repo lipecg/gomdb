@@ -10,7 +10,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
+const dbConnString = "mongodb+srv://gomdb:AS6pjaMXYuCpaMkr@movies.ojtvno4.mongodb.net/?retryWrites=true&w=majority"
 
 var client *mongo.Client
 var db *mongo.Database
@@ -21,7 +21,7 @@ func init() {
 	if err != nil {
 		logging.Panic(err.Error())
 	}
-	db = client.Database("gomdb")
+	db = client.Database("movies")
 }
 
 func getMongoCollection(collection string) *mongo.Collection {
