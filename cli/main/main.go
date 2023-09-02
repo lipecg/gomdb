@@ -36,7 +36,7 @@ type params struct {
 	requestsPerSecond int
 }
 
-var execParams params = params{startAt: 1, limit: -1, requestsPerSecond: 40}
+var execParams params = params{startAt: 1, limit: -1, requestsPerSecond: -1}
 var categoryPropertiesMap = map[string]categoryProperties{
 	"movies":      {"movie", "movies", "movie"},
 	"tvseries":    {"tv_series", "tvseries", "tv"},
@@ -225,8 +225,11 @@ func importData() error {
 
 	var wg sync.WaitGroup
 
-	// Create a rate limiter that allows 50 events per second
-	limiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
+	// Create a rate limiter that allows X events per second
+	var limiter *rate.Limiter = nil
+	if execParams.requestsPerSecond > -1 {
+		limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
+	}
 
 	count := 1
 
@@ -254,7 +257,9 @@ func importData() error {
 				}
 				// query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, entity.ID)
 
-				limiter.Wait(context.Background())
+				if limiter != nil {
+					limiter.Wait(context.Background())
+				}
 
 				// err = tmdb.Get(query, &entity.Data)
 				// if err != nil {
