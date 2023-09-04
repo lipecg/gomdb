@@ -18,6 +18,7 @@ import (
 	"gomdb/internal/pkg/logging"
 	"gomdb/internal/pkg/tmdb"
 
+	"github.com/robfig/cron"
 	"golang.org/x/time/rate"
 )
 
@@ -48,7 +49,7 @@ var categoryPropertiesMap = map[string]categoryProperties{
 }
 
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
-var validActions = []string{"import", "import-many", "sync", "download-files"}
+var validActions = []string{"import", "import-many", "sync", "download-files", "start-cron-service"}
 
 func setExecParams(execArgs []string) error {
 
@@ -62,7 +63,7 @@ func setExecParams(execArgs []string) error {
 
 	execParams.action = strings.ToLower(execArgs[0])
 
-	if execParams.action == "download-files" {
+	if execParams.action == "download-files" || execParams.action == "start-cron-service" {
 		return nil
 	}
 
@@ -110,6 +111,12 @@ func setExecParams(execArgs []string) error {
 	return nil
 }
 
+func setCronParams(cat string) {
+	execParams.action = "sync"
+	execParams.category = cat
+	execParams.categoryInfo = categoryPropertiesMap[execParams.category]
+}
+
 func sliceContains(collection []string, s string) bool {
 	for _, item := range collection {
 		if item == s {
@@ -147,6 +154,8 @@ func main() {
 		err = importData()
 	case "import-many":
 		err = importMany()
+	case "start-cron-service":
+		startCronService()
 	}
 
 	if err != nil {
@@ -155,8 +164,30 @@ func main() {
 
 }
 
-func syncData() error {
+func startCronService() {
 
+	c := cron.New()
+
+	c.AddFunc("0 0 1 * *", func() {
+		setCronParams("movies")
+		syncData()
+	})
+	c.AddFunc("0 0 2 * *", func() {
+		setCronParams("tvseries")
+		syncData()
+	})
+	c.AddFunc("0 0 3 * *", func() {
+		setCronParams("people")
+		syncData()
+	})
+
+	c.Start()
+	defer c.Stop()
+	select {}
+
+}
+
+func syncData() error {
 	var updatedEntities []domain.Entity
 	var options tmdb.SearchOptions = tmdb.SearchOptions{Page: 1}
 
