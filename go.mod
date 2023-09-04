@@ -4,6 +4,8 @@ go 1.21.0
 
 require go.mongodb.org/mongo-driver v1.12.1
 
+require github.com/robfig/cron v1.2.0
+
 require (
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/klauspost/compress v1.13.6 // indirect
