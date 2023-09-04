@@ -34,9 +34,10 @@ type params struct {
 	startAt           int
 	limit             int
 	requestsPerSecond int
+	batchSize         int
 }
 
-var execParams params = params{startAt: 1, limit: -1, requestsPerSecond: -1}
+var execParams params = params{startAt: 1, limit: -1, requestsPerSecond: -1, batchSize: 10}
 var categoryPropertiesMap = map[string]categoryProperties{
 	"movies":      {"movie", "movies", "movie"},
 	"tvseries":    {"tv_series", "tvseries", "tv"},
@@ -47,7 +48,7 @@ var categoryPropertiesMap = map[string]categoryProperties{
 }
 
 var validCategories = []string{"movies", "tvseries", "tvnetworks", "people", "collections", "keywords"}
-var validActions = []string{"import", "sync", "download-files"}
+var validActions = []string{"import", "import-many", "sync", "download-files"}
 
 func setExecParams(execArgs []string) error {
 
@@ -99,6 +100,13 @@ func setExecParams(execArgs []string) error {
 		}
 	}
 
+	if len(os.Args[1:]) > 5 && os.Args[1:][5] != "" {
+		execParams.batchSize, err = strconv.Atoi(os.Args[1:][5])
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -137,6 +145,8 @@ func main() {
 		err = syncData()
 	case "import":
 		err = importData()
+	case "import-many":
+		err = importMany()
 	}
 
 	if err != nil {
@@ -147,57 +157,186 @@ func main() {
 
 func syncData() error {
 
-	var updatedEntities *[]domain.Entity = new([]domain.Entity)
+	var updatedEntities []domain.Entity
+	var options tmdb.SearchOptions = tmdb.SearchOptions{Page: 1}
 
-	err := tmdb.GetUpdatedEntities(execParams.categoryInfo.apiEndpoint, updatedEntities, tmdb.SearchOptions{Page: 1})
-	if err != nil {
-		logging.Panic(err.Error())
+	remainingPages := 1
+
+	logging.Infoln("Fetching updates...")
+
+	for remainingPages > 0 {
+
+		var err error
+
+		remainingPages, err = tmdb.GetUpdatedEntities(execParams.categoryInfo.apiEndpoint, &updatedEntities, options)
+		if err != nil {
+			return err
+		}
+		if remainingPages > 0 {
+			options.Page++
+		}
+
+		fmt.Print("\r", len(updatedEntities), " entities fetched")
 	}
 
-	countEntities := len(*updatedEntities)
-	countUpdatedEntities := 0
+	countEntities := len(updatedEntities)
 
-	logging.Infoln(fmt.Sprintf("Found %d updated %s", countEntities, execParams.category))
+	fmt.Print("\r")
+	logging.Infoln(fmt.Sprintf("%v entities changed since last sync", countEntities))
+
+	var insertableEntities []interface{}
+
+	logging.Infoln("Fetching updated entities...")
 
 	var wg sync.WaitGroup
-
-	// Create a rate limiter that allows 50 events per second
+	if execParams.requestsPerSecond < 0 {
+		execParams.requestsPerSecond = 45
+	}
 	limiter := rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
 
-	for _, entity := range *updatedEntities {
+	countEntities = 0
+
+	for _, v := range updatedEntities {
 
 		wg.Add(1)
 
-		go func(ent domain.Entity) {
-
+		go func(v domain.Entity) {
 			defer wg.Done()
 
+			query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, v.ID)
+
 			limiter.Wait(context.Background())
-
-			query := fmt.Sprintf("%s/%v", execParams.categoryInfo.apiEndpoint, ent.ID)
-
-			err := tmdb.Get(query, &ent.Data)
+			err := tmdb.Get(query, &v)
 			if err != nil {
-				logging.Error(err.Error())
+				fmt.Print("x")
 				return
 			}
 
-			result, err := database.Upsert(&ent, execParams.categoryInfo.dbCollection)
-			if err != nil {
-				logging.Error(err.Error())
-				return
-			}
+			v.Updated = time.Now()
 
-			countUpdatedEntities++
-			completion := fmt.Sprintf("%d/%d", countUpdatedEntities, countEntities)
+			insertableEntities = append(insertableEntities, v)
 
-			logging.Infoln(fmt.Sprintf("%s %s %v - %v", strings.ToUpper(execParams.category), completion, ent.ID, result))
+			countEntities++
 
-		}(entity)
+			fmt.Printf("\r%v entities fetched", countEntities)
 
+		}(v)
 	}
 
 	wg.Wait()
+	fmt.Println()
+
+	countEntities = len(insertableEntities)
+
+	fmt.Print("\r")
+	logging.Infoln(fmt.Sprintf("%v entities to insert", countEntities))
+
+	logging.Infoln("Inserting updated entities...")
+
+	result, err := database.InsertMany(insertableEntities, execParams.categoryInfo.dbCollection)
+	if err != nil {
+		return err
+	}
+
+	logging.Infoln(fmt.Sprintf("%s %v entities inserted.", strings.ToUpper(execParams.category), len(result.InsertedIDs)))
+
+	return nil
+}
+
+func importMany() error {
+	today := time.Now().Format("01_02_2006")
+	fileName := fmt.Sprintf("./daily_id_exports/%s_ids_%s.json.gz", execParams.categoryInfo.filePrefix, today)
+
+	// Open the gzipped file
+	file, err := os.Open(fileName)
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+	defer file.Close()
+
+	// Create a gzip reader
+	gzReader, err := gzip.NewReader(file)
+	if err != nil {
+		logging.Panic(err.Error())
+	}
+	defer gzReader.Close()
+
+	// Create a scanner to read the decompressed data line by line
+	scanner := bufio.NewScanner(gzReader)
+
+	var wg sync.WaitGroup
+
+	// Create a rate limiter that allows X events per second
+	var limiter *rate.Limiter = nil
+	if execParams.requestsPerSecond > -1 {
+		limiter = rate.NewLimiter(rate.Every(time.Second/time.Duration(execParams.requestsPerSecond)), 1)
+	}
+
+	count := 1
+	countEntities := 0
+	var entities []interface{}
+
+	for scanner.Scan() {
+
+		line := scanner.Text()
+
+		if execParams.limit > 0 && count >= (execParams.startAt+execParams.limit) {
+			break
+		}
+
+		if count >= execParams.startAt {
+
+			var entity *domain.Entity
+
+			err := json.Unmarshal([]byte(line), &entity)
+			if err != nil {
+				logging.Error(fmt.Sprintf("%s %v \n", "ERROR", err))
+				continue
+			}
+
+			entity.Updated = time.Now()
+
+			entities = append(entities, entity)
+
+			countEntities++
+
+			if countEntities >= execParams.batchSize || (execParams.limit > 0 && count == (execParams.startAt+execParams.limit-1)) {
+
+				wg.Add(1)
+
+				go func(entitiesInsert []interface{}) {
+
+					defer wg.Done()
+
+					if limiter != nil {
+						limiter.Wait(context.Background())
+					}
+
+					_, err := database.InsertMany(entitiesInsert, execParams.categoryInfo.dbCollection)
+					if err != nil {
+						logging.Error(err.Error())
+						return
+					}
+
+					logging.Infoln(fmt.Sprintf("%s %v entities inserted.", strings.ToUpper(execParams.category), len(entitiesInsert)))
+
+				}(entities)
+
+				countEntities = 0
+				entities = nil
+			}
+
+		}
+
+		count++
+	}
+
+	wg.Wait()
+
+	// Check for any errors during scanning
+	if err := scanner.Err(); err != nil {
+		logging.Panic(err.Error())
+	}
 
 	return nil
 }

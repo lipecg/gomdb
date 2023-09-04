@@ -6,6 +6,7 @@ type Entity struct {
 	ID       int         `¬json:"id,omitempty" bson:"id,omitempty"`
 	ObjectId interface{} `json:"_id,omitempty" bson:"_id,omitempty"`
 	ImdbID   string      `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
+	Updated  time.Time   `json:"updated,omitempty" bson:"updated,omitempty"`
 
 	Adult               bool                `json:"adult,omitempty" bson:"adult,omitempty"`
 	BackdropPath        string              `json:"backdrop_path,omitempty" bson:"backdrop_path,omitempty"`
@@ -30,7 +31,6 @@ type Entity struct {
 	Video               bool                `json:"video,omitempty" bson:"video,omitempty"`
 	VoteAverage         float64             `json:"vote_average,omitempty" bson:"vote_average,omitempty"`
 	VoteCount           int                 `json:"vote_count,omitempty" bson:"vote_count,omitempty"`
-	Updated             time.Time           `json:"updated,omitempty" bson:"updated,omitempty"`
 
 	// TV Series
 	CreatedBy        []CreatedBy `json:"created_by,omitempty" bson:"created_by,omitempty"`
