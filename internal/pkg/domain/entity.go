@@ -3,7 +3,7 @@ package domain
 import "time"
 
 type Entity struct {
-	ID       int         `¬json:"id,omitempty" bson:"id,omitempty"`
+	ID       int         `json:"id,omitempty" bson:"id,omitempty"`
 	ObjectId interface{} `json:"_id,omitempty" bson:"_id,omitempty"`
 	ImdbID   string      `json:"imdb_id,omitempty" bson:"imdb_id,omitempty"`
 	Updated  time.Time   `json:"updated,omitempty" bson:"updated,omitempty"`
