@@ -21,23 +21,36 @@ func main() {
 	r.HandleFunc("/movies", func(w http.ResponseWriter, r *http.Request) {
 
 		query := r.URL.Query()
-		var field string
-		var value int
-		if len(query) > 0 {
-			field = query.Get("field")
-			value, _ = strconv.Atoi(query.Get("value"))
+
+		listOptions := database.ListOptions{}
+
+		if val, ok := query["page"]; ok {
+			listOptions.Page, _ = strconv.Atoi(val[0])
 		}
 
-		var list []domain.Entity
+		if val, ok := query["pagesize"]; ok {
+			listOptions.PageSize, _ = strconv.Atoi(val[0])
+		}
+
+		if val, ok := query["searchfield"]; ok {
+			listOptions.SearchField = val[0]
+		}
+
+		if val, ok := query["searchtext"]; ok {
+			listOptions.SearchText = val[0]
+		}
+
+		var listResult database.ListResult
 
 		var collection = "movies"
-		err := database.List(field, value, collection, &list)
+
+		err := database.List(collection, &listResult, listOptions)
 		if err != nil {
 			logging.Error(err.Error())
 			http.Error(w, "Error querying DB", http.StatusInternalServerError)
 			return
 		}
-		jsonBytes, err := json.Marshal(list)
+		jsonBytes, err := json.Marshal(listResult)
 
 		if err != nil {
 			http.Error(w, "Error marshaling JSON", http.StatusInternalServerError)

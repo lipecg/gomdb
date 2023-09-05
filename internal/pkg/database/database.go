@@ -4,6 +4,7 @@ import (
 	"context"
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/logging"
+	"math"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -66,22 +67,67 @@ func Get(entity *domain.Entity, collection string) error {
 	col := getMongoCollection(collection)
 
 	filter := bson.M{"id": entity.ID}
+	options := options.FindOne()
+	options.Sort = bson.M{"updated": -1}
 
-	err := col.FindOne(context.Background(), filter).Decode(entity)
+	err := col.FindOne(context.Background(), filter, options).Decode(entity)
 
 	return err
 }
 
-func List(field string, value any, collection string, list *[]domain.Entity) error {
+type ListOptions struct {
+	Page        int    `default:"1"`
+	PageSize    int    `default:"10"`
+	SearchText  string `default:""`
+	SearchField string `default:""`
+}
+
+type ListResult struct {
+	TotalRecords int             `json:"total_results"`
+	TotalPages   int             `json:"total_pages"`
+	CurrentPage  int             `json:"current_page"`
+	CountResults int             `json:"count_results"`
+	PageSize     int             `json:"page_size"`
+	List         []domain.Entity `json:"list"`
+}
+
+func List(collection string, listResult *ListResult, listOptions ListOptions) error {
 
 	col := getMongoCollection(collection)
 
 	filter := bson.M{}
-	if field != "" && value != nil {
-		filter = bson.M{field: value}
+	options := options.Find()
+	options.Sort = bson.M{"updated": -1}
+	options.SetLimit(int64(listOptions.PageSize))
+	options.SetSkip(int64(listOptions.PageSize * (listOptions.Page - 1)))
+
+	if listOptions.SearchText != "" && listOptions.SearchField != "" {
+		filter[listOptions.SearchField] = bson.M{"$regex": listOptions.SearchText, "$options": "i"}
 	}
 
-	cursor, err := col.Find(context.Background(), filter)
+	// get the total number of documents
+	total, err := col.CountDocuments(context.Background(), filter)
+	if err != nil {
+		return err
+	}
+
+	listResult.TotalRecords = int(total)
+	listResult.TotalPages = int(math.Ceil(float64(total) / float64(listOptions.PageSize)))
+	listResult.CurrentPage = listOptions.Page
+	listResult.PageSize = listOptions.PageSize
+
+	//cursor, err := col.Find(context.Background(), filter, options)
+
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$sort": bson.M{"id": 1, "updated": -1}},
+		{"$group": bson.M{"_id": "$id", "doc": bson.M{"$first": "$$ROOT"}}},
+		{"$sort": bson.M{"_id": 1}},
+		{"$skip": int64(listOptions.PageSize * (listOptions.Page - 1))},
+		{"$limit": int64(listOptions.PageSize)},
+	}
+
+	cursor, err := col.Aggregate(context.Background(), pipeline)
 	if err != nil {
 		return err
 	}
@@ -89,13 +135,32 @@ func List(field string, value any, collection string, list *[]domain.Entity) err
 	defer cursor.Close(context.Background())
 
 	for cursor.Next(context.Background()) {
-		var entity domain.Entity
-		err := cursor.Decode(&entity)
+		var result struct {
+			ID  int           `bson:"id"`
+			Doc domain.Entity `bson:"doc"`
+		}
+		err := cursor.Decode(&result)
 		if err != nil {
 			return err
 		}
-		*list = append(*list, entity)
+
+		listResult.List = append(listResult.List, result.Doc)
+		listResult.CountResults++
 	}
 
 	return nil
 }
+
+// db.movies.aggregate(
+//    [
+// 	{ $match: { id: 346698 } },
+//      { $sort: { id: 1, updated: -1 } },
+//      {
+//        $group:
+//          {
+//            _id: "$id",
+//            first: { $first: "$$ROOT" }
+//          }
+//      }
+//    ]
+// )
