@@ -5,6 +5,7 @@ import (
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/logging"
 	"math"
+	"os"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -12,14 +13,18 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-const dbConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
+const defaultConnString = "mongodb://gomdb-root:8lURb24nnHE8Kht3@10.0.0.126:27017/?retryWrites=true&w=majority"
 
 var client *mongo.Client
 var db *mongo.Database
 
 func init() {
+	connString := os.Getenv("MONGODB_URI")
+	if connString == "" {
+		connString = defaultConnString
+	}
 	var err error
-	client, err = mongo.Connect(context.Background(), options.Client().ApplyURI(dbConnString))
+	client, err = mongo.Connect(context.Background(), options.Client().ApplyURI(connString))
 	if err != nil {
 		logging.Panic(err.Error())
 	}

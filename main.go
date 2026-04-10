@@ -7,6 +7,7 @@ import (
 	"gomdb/internal/pkg/domain"
 	"gomdb/internal/pkg/logging"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -103,7 +104,11 @@ func main() {
 	// Serve the static web UI
 	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
 
-	fmt.Println("Listening on port 8181...")
-	http.ListenAndServe("0.0.0.0:8181", r)
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8181"
+	}
+	fmt.Printf("Listening on port %s...\n", port)
+	http.ListenAndServe("0.0.0.0:"+port, r)
 
 }
