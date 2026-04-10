@@ -1,23 +1,20 @@
-# Specifies a parent image
-FROM golang:1.21.0
-
-# Creates an app directory to hold your app’s source code
+# ---- Build stage ----
+FROM golang:1.21-alpine AS builder
 WORKDIR /app
-
-# Copies everything from your root directory into /app
-COPY . .
-
-# Installs Go dependencies
+COPY go.mod go.sum ./
 RUN go mod download
+COPY . .
+RUN go build -o gomdb-api .
 
-# RUN chmod +x /app/gomdb/cli/main
+# ---- Run stage ----
+FROM alpine:3.19
+# ca-certificates is required for TLS connections (MongoDB Atlas, TMDB API)
+RUN apk --no-cache add ca-certificates
+WORKDIR /app
+COPY --from=builder /app/gomdb-api .
+COPY --from=builder /app/static ./static
 
-# # Builds your app with optional configuration
-RUN go build -o gomdb-api . 
-
+# Cloud Run sets PORT; default to 8181 for local runs
+ENV PORT=8181
 EXPOSE 8080
 CMD ["./gomdb-api"]
-
-
-# docker build -t gomdb-api:0.1 .
-# docker run --name gomdb-api -p 8080:8080 gomdb-api:0.1 --auth
