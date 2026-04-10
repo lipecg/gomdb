@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GomDB - Movie Browser</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0d0d;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --accent: #e50914;
+      --text: #e8e8e8;
+      --muted: #888;
+      --radius: 10px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--surface);
+      padding: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.5);
+    }
+
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      color: var(--accent);
+      letter-spacing: 1px;
+      font-weight: 700;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .search-row input {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid #333;
+      border-radius: var(--radius);
+      color: var(--text);
+      font-size: 1rem;
+      padding: 10px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-row input:focus {
+      border-color: var(--accent);
+    }
+
+    .search-row button {
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius);
+      color: #fff;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      transition: opacity 0.2s;
+    }
+
+    .search-row button:active { opacity: 0.75; }
+
+    main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    .status-bar {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 14px;
+      min-height: 1.2em;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 14px;
+    }
+
+    @media (min-width: 500px) {
+      .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .card:active { transform: scale(0.97); }
+
+    .card img {
+      width: 100%;
+      aspect-ratio: 2/3;
+      object-fit: cover;
+      display: block;
+      background: var(--surface2);
+    }
+
+    .card-placeholder {
+      width: 100%;
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+    }
+
+    .card-info {
+      padding: 8px 10px 10px;
+    }
+
+    .card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .card-meta {
+      color: var(--muted);
+      font-size: 0.75rem;
+      margin-top: 4px;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .rating {
+      color: #f5c518;
+      font-weight: 700;
+    }
+
+    .pagination {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      margin-top: 24px;
+      flex-wrap: wrap;
+    }
+
+    .pagination button {
+      background: var(--surface);
+      border: 1px solid #333;
+      border-radius: var(--radius);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.9rem;
+      padding: 9px 16px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+
+    .pagination button:hover { background: var(--surface2); border-color: #555; }
+    .pagination button:disabled { opacity: 0.35; cursor: default; }
+    .pagination button.active { background: var(--accent); border-color: var(--accent); font-weight: 700; }
+
+    .page-info {
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      z-index: 200;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    @media (min-width: 600px) {
+      .modal-overlay { align-items: center; }
+    }
+
+    .modal {
+      background: var(--surface);
+      border-radius: 16px 16px 0 0;
+      max-height: 90vh;
+      overflow-y: auto;
+      width: 100%;
+      max-width: 600px;
+      padding: 0 0 env(safe-area-inset-bottom);
+      -webkit-overflow-scrolling: touch;
+    }
+
+    @media (min-width: 600px) {
+      .modal { border-radius: 16px; max-height: 85vh; }
+    }
+
+    .modal-header {
+      display: flex;
+      gap: 16px;
+      padding: 20px;
+    }
+
+    .modal-poster {
+      width: 90px;
+      flex-shrink: 0;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .modal-poster img { width: 100%; display: block; }
+
+    .modal-poster-placeholder {
+      width: 90px;
+      aspect-ratio: 2/3;
+      background: var(--surface2);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+    }
+
+    .modal-title-block { flex: 1; }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .modal-tagline {
+      color: var(--muted);
+      font-style: italic;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+
+    .modal-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .chip {
+      background: var(--surface2);
+      border-radius: 99px;
+      font-size: 0.75rem;
+      padding: 3px 10px;
+      color: var(--text);
+    }
+
+    .chip.accent { background: var(--accent); }
+
+    .modal-body { padding: 0 20px 20px; }
+
+    .modal-overview {
+      color: #ccc;
+      font-size: 0.9rem;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .modal-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .detail-item label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .detail-item span {
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      background: rgba(0,0,0,0.5);
+      border: none;
+      border-radius: 50%;
+      color: #fff;
+      cursor: pointer;
+      font-size: 1.2rem;
+      height: 36px;
+      width: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 60px 20px;
+      font-size: 1rem;
+    }
+
+    .spinner {
+      display: flex;
+      justify-content: center;
+      padding: 60px 0;
+    }
+
+    .spinner::after {
+      content: '';
+      width: 40px;
+      height: 40px;
+      border: 4px solid #333;
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <h1>GOMDB</h1>
+    <div class="search-row">
+      <input id="search-input" type="search" placeholder="Search movies..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+      <button id="search-btn">Search</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="status-bar" id="status-bar"></div>
+  <div id="spinner" class="spinner hidden"></div>
+  <div id="grid" class="grid"></div>
+  <div id="empty" class="empty hidden">No movies found.</div>
+  <div class="pagination" id="pagination"></div>
+</main>
+
+<!-- Movie detail modal -->
+<div class="modal-overlay hidden" id="modal-overlay" role="dialog" aria-modal="true">
+  <div class="modal" id="modal">
+    <div style="position:relative">
+      <button class="modal-close" id="modal-close" aria-label="Close">&times;</button>
+      <div class="modal-header">
+        <div id="modal-poster"></div>
+        <div class="modal-title-block">
+          <div class="modal-title" id="modal-title"></div>
+          <div class="modal-tagline" id="modal-tagline"></div>
+          <div class="modal-chips" id="modal-chips"></div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p class="modal-overview" id="modal-overview"></p>
+        <div class="modal-details" id="modal-details"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const POSTER_BASE = 'https://image.tmdb.org/t/p/w342';
+  const API = '';
+
+  let state = {
+    page: 1,
+    pageSize: 20,
+    search: '',
+    totalPages: 1,
+    totalResults: 0,
+  };
+
+  const $ = id => document.getElementById(id);
+
+  async function fetchMovies() {
+    $('spinner').classList.remove('hidden');
+    $('grid').innerHTML = '';
+    $('empty').classList.add('hidden');
+    $('pagination').innerHTML = '';
+    $('status-bar').textContent = '';
+
+    const params = new URLSearchParams({
+      page: state.page,
+      pagesize: state.pageSize,
+    });
+    if (state.search) {
+      params.set('searchfield', 'title');
+      params.set('searchtext', state.search);
+    }
+
+    try {
+      const res = await fetch(`${API}/movies?${params}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      state.totalPages = data.total_pages || 1;
+      state.totalResults = data.total_results || 0;
+
+      $('spinner').classList.add('hidden');
+
+      const list = data.list || [];
+      if (!list.length) {
+        $('empty').classList.remove('hidden');
+        return;
+      }
+
+      $('status-bar').textContent =
+        `${state.totalResults.toLocaleString()} movies  •  page ${state.page} of ${state.totalPages}`;
+
+      renderGrid(list);
+      renderPagination();
+    } catch (e) {
+      $('spinner').classList.add('hidden');
+      $('status-bar').textContent = `Error: ${e.message}`;
+    }
+  }
+
+  function renderGrid(movies) {
+    const frag = document.createDocumentFragment();
+    movies.forEach(m => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.setAttribute('role', 'button');
+      card.setAttribute('tabindex', '0');
+
+      const title = m.title || m.name || 'Untitled';
+      const year = (m.release_date || m.first_air_date || '').slice(0, 4);
+      const rating = m.vote_average ? m.vote_average.toFixed(1) : null;
+
+      const img = m.poster_path
+        ? `<img src="${POSTER_BASE}${m.poster_path}" alt="${escHtml(title)}" loading="lazy">`
+        : `<div class="card-placeholder">🎬</div>`;
+
+      card.innerHTML = `
+        ${img}
+        <div class="card-info">
+          <div class="card-title">${escHtml(title)}</div>
+          <div class="card-meta">
+            ${rating ? `<span class="rating">★ ${rating}</span>` : ''}
+            ${year ? `<span>${year}</span>` : ''}
+          </div>
+        </div>`;
+
+      card.addEventListener('click', () => openModal(m));
+      card.addEventListener('keydown', e => { if (e.key === 'Enter') openModal(m); });
+      frag.appendChild(card);
+    });
+    $('grid').appendChild(frag);
+  }
+
+  function renderPagination() {
+    const p = $('pagination');
+    if (state.totalPages <= 1) return;
+
+    const addBtn = (label, page, active = false, disabled = false) => {
+      const btn = document.createElement('button');
+      btn.textContent = label;
+      if (active) btn.classList.add('active');
+      btn.disabled = disabled;
+      btn.addEventListener('click', () => {
+        state.page = page;
+        fetchMovies();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+      p.appendChild(btn);
+    };
+
+    addBtn('‹ Prev', state.page - 1, false, state.page === 1);
+
+    // page numbers around current
+    const start = Math.max(1, state.page - 2);
+    const end = Math.min(state.totalPages, state.page + 2);
+    if (start > 1) { addBtn('1', 1); if (start > 2) { const el = document.createElement('span'); el.className = 'page-info'; el.textContent = '…'; p.appendChild(el); } }
+    for (let i = start; i <= end; i++) addBtn(i, i, i === state.page);
+    if (end < state.totalPages) { if (end < state.totalPages - 1) { const el = document.createElement('span'); el.className = 'page-info'; el.textContent = '…'; p.appendChild(el); } addBtn(state.totalPages, state.totalPages); }
+
+    addBtn('Next ›', state.page + 1, false, state.page === state.totalPages);
+  }
+
+  function openModal(m) {
+    const title = m.title || m.name || 'Untitled';
+    const year = (m.release_date || m.first_air_date || '').slice(0, 4);
+    const rating = m.vote_average ? m.vote_average.toFixed(1) : null;
+
+    $('modal-title').textContent = title;
+    $('modal-tagline').textContent = m.tagline || '';
+    $('modal-overview').textContent = m.overview || 'No overview available.';
+
+    // poster
+    const posterEl = $('modal-poster');
+    if (m.poster_path) {
+      posterEl.className = 'modal-poster';
+      posterEl.innerHTML = `<img src="${POSTER_BASE}${m.poster_path}" alt="${escHtml(title)}">`;
+    } else {
+      posterEl.className = 'modal-poster-placeholder';
+      posterEl.textContent = '🎬';
+    }
+
+    // chips
+    const chips = $('modal-chips');
+    chips.innerHTML = '';
+    if (rating) chips.innerHTML += `<span class="chip accent">★ ${rating}</span>`;
+    if (year) chips.innerHTML += `<span class="chip">${year}</span>`;
+    if (m.runtime) chips.innerHTML += `<span class="chip">${m.runtime} min</span>`;
+    (m.genres || []).slice(0, 3).forEach(g => {
+      chips.innerHTML += `<span class="chip">${escHtml(g.name)}</span>`;
+    });
+
+    // details
+    const details = $('modal-details');
+    details.innerHTML = '';
+    const addDetail = (label, value) => {
+      if (!value) return;
+      details.innerHTML += `<div class="detail-item"><label>${label}</label><span>${escHtml(String(value))}</span></div>`;
+    };
+    addDetail('Status', m.status);
+    addDetail('Language', m.original_language ? m.original_language.toUpperCase() : null);
+    addDetail('Budget', m.budget ? `$${m.budget.toLocaleString()}` : null);
+    addDetail('Revenue', m.revenue ? `$${m.revenue.toLocaleString()}` : null);
+    addDetail('Votes', m.vote_count ? m.vote_count.toLocaleString() : null);
+    addDetail('IMDB', m.imdb_id || null);
+
+    $('modal-overlay').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeModal() {
+    $('modal-overlay').classList.add('hidden');
+    document.body.style.overflow = '';
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Event wiring
+  $('search-btn').addEventListener('click', () => {
+    state.search = $('search-input').value.trim();
+    state.page = 1;
+    fetchMovies();
+  });
+
+  $('search-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      state.search = $('search-input').value.trim();
+      state.page = 1;
+      fetchMovies();
+    }
+  });
+
+  $('modal-close').addEventListener('click', closeModal);
+  $('modal-overlay').addEventListener('click', e => {
+    if (e.target === $('modal-overlay')) closeModal();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+
+  // Initial load
+  fetchMovies();
+</script>
+</body>
+</html>

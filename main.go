@@ -100,7 +100,10 @@ func main() {
 		fmt.Fprintf(w, "Keywords!")
 	})
 
+	// Serve the static web UI
+	r.PathPrefix("/").Handler(http.FileServer(http.Dir("./static")))
+
 	fmt.Println("Listening on port 8181...")
-	http.ListenAndServe("localhost:8181", r)
+	http.ListenAndServe("0.0.0.0:8181", r)
 
 }
